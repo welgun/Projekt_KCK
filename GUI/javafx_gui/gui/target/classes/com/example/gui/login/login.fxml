@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<StackPane xmlns="http://javafx.com/javafx"
+           xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.example.gui.login.LoginController"
+           prefHeight="500.0" prefWidth="700.0"
+           stylesheets="@login.css"
+           styleClass="root">
+
+    <VBox fx:id="loginBox"
+          styleClass="content-box"
+          alignment="CENTER"
+          spacing="30.0"
+          maxWidth="400.0"
+          maxHeight="-Infinity">
+
+        <VBox alignment="CENTER_LEFT" spacing="8.0">
+            <Label fx:id="login" text="Nazwa użytkownika" styleClass="input-label"/>
+            <TextField fx:id="inLogin" promptText="Wpisz swój nick..." styleClass="input-field"/>
+            <Label fx:id="count" text="Podaj liczbe poprawnych powtorzen, ktore chcesz wykonac" styleClass="input-label"/>
+            <TextField fx:id="inCount" promptText="Wpisz liczbe powtorzen..." styleClass="input-field"/>
+        </VBox>
+
+        <Button text="Dalej" onAction="#onLoginButtonClick" styleClass="action-button" defaultButton="true"/>
+
+    </VBox>
+
+    <Label fx:id="success" />
+
+</StackPane>
