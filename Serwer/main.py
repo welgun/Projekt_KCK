@@ -54,5 +54,44 @@ def login():
     else:
         return jsonify({"error": "Nieprawidłowy login lub hasło"}), 401
 
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    
+    if not data or not data.get('username') or not data.get('password'):
+        return jsonify({"error": "Brak loginu lub hasła"}), 400
+
+    username = data['username']
+    password = data['password']
+
+    conn = get_db()
+    
+    existing_user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+    
+    if existing_user:
+        conn.close()
+        return jsonify({"error": "Użytkownik o takim loginie już istnieje"}), 409
+
+    hashed_password = generate_password_hash(password)
+
+    try:
+        cursor = conn.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', (username, hashed_password))
+        conn.commit()
+        
+        new_user_id = cursor.lastrowid
+        
+        return jsonify({
+            "message": "Zarejestrowano pomyślnie!",
+            "user_id": new_user_id,
+            "username": username
+        }), 201
+        
+    except sqlite3.Error as e:
+        conn.rollback()
+        return jsonify({"error": "Błąd bazy danych podczas rejestracji"}), 500
+        
+    finally:
+        conn.close()
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
