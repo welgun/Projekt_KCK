@@ -1,5 +1,5 @@
 import time #tylko do testow - pozniej usunac
-import pyttsx3
+from piper.voice import PiperVoice
 import vosk
 import pyaudio
 import queue
@@ -8,17 +8,22 @@ import threading
 class MowaTrenera:
     def __init__(self):
         self.kolejka_zdan = queue.Queue()
+
+        self._skonfiguruj_glos()
+
         glowny_watek_mowy = threading.Thread(target=self._glowny_watek_mowy, daemon=True)
         glowny_watek_mowy.start()
 
-    def _skonfiguruj_glos(self, silnik):
-        silnik.setProperty('rate', 150)
+    def _skonfiguruj_glos(self):
+        self.glos = PiperVoice.load("pl_PL-mc_speech-medium.onnx")
+        self.pyaudio_instance = pyaudio.PyAudio()
 
-        glosy = silnik.getProperty('voices')
-        for glos in glosy:
-            if 'pl' in glos.languages or 'pol' in glos.name.lower() or 'polish' in glos.name.lower():
-                silnik.setProperty('voice', glos.id)
-                break
+        self.strumien = self.pyaudio_instance.open(
+            format=pyaudio.paInt16,
+            channels=1,
+            rate=self.glos.config.sample_rate,
+            output=True
+        )
 
     def powiedz(self, tekst):
         self.kolejka_zdan.put(tekst)
@@ -26,11 +31,10 @@ class MowaTrenera:
     def _glowny_watek_mowy(self):
         while True:
             tekst = self.kolejka_zdan.get()
-            silnik = pyttsx3.init()
-            self._skonfiguruj_glos(silnik)
-            silnik.say(tekst)
-            silnik.runAndWait()
-            del silnik
+
+            for chunk in self.glos.synthesize(tekst):
+                dane_audio = chunk.audio_int16_bytes
+                self.strumien.write(dane_audio)
 
 #model = vosk.Model("vosk-model-pl")
 
