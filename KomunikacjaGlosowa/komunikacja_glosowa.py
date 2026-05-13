@@ -4,6 +4,7 @@ import vosk
 import pyaudio
 import queue
 import threading
+import json
 
 class BladKonfiguracjiMowy(Exception):
     pass
@@ -55,16 +56,65 @@ class MowaTrenera:
         self.strumien.close()
         self.pyaudio_instance.terminate()
 
-#model = vosk.Model("vosk-model-pl")
+class BladKonfiguracjiSluchu(Exception):
+    pass
+
+
+class SluchTrenera:
+    def __init__(self):
+        self._skonfiguruj_sluch("vosk-model-pl")
+        self.dziala = True
+
+        self.watek_sluchania = threading.Thread(target=self._glowny_watek_sluchania, daemon=False)
+        self.watek_sluchania.start()
+
+    def _skonfiguruj_sluch(self, sciezka_modelu):
+        # ... Twoja konfiguracja (bez zmian) ...
+        try:
+            model = vosk.Model(sciezka_modelu)
+            self.rozpoznawacz = vosk.KaldiRecognizer(model, 16000)
+            self.pyaudio_instance = pyaudio.PyAudio()
+            self.strumien = self.pyaudio_instance.open(
+                format=pyaudio.paInt16,
+                channels=1,
+                rate=16000,
+                input=True,
+                frames_per_buffer=8000
+            )
+            self.strumien.start_stream()
+        except Exception as e:
+            raise BladKonfiguracjiSluchu(f"Błąd konfiguracji: {e}")
+
+    def _glowny_watek_sluchania(self):
+        while self.dziala:
+            dane = self.strumien.read(4000, exception_on_overflow=False)
+            if self.rozpoznawacz.AcceptWaveform(dane):
+                wynik = json.loads(self.rozpoznawacz.Result())
+                tekst = wynik.get("text", "")
+                if tekst:
+                    self.obsluz_rozpoznany_tekst(tekst)
+                    time.sleep(0.1)
+
+    def obsluz_rozpoznany_tekst(self, tekst):
+        print(f"Trener usłyszał: {tekst}") #do testow - mozna potem usunac
+        if "koniec" in tekst or "wyłącz" in tekst:
+            self.zamknij()
+
+    def zamknij(self):
+        self.dziala = False
+
+        self.strumien.stop_stream()
+        self.strumien.close()
+        self.pyaudio_instance.terminate()
+
 
 #ponizej jest test komunikacji - do usuniecia pozniej
 
-a = MowaTrenera()
+mowa = MowaTrenera()
+sluch = SluchTrenera()
 
-a.powiedz("testowy tekst 1")
-a.powiedz("testowy tekst 2")
-a.powiedz("ostatnie zdanie")
+mowa.powiedz("testowy tekst 1")
+mowa.powiedz("testowy tekst 2")
+mowa.powiedz("ostatnie zdanie")
 
-time.sleep(7)
-
-a.zamknij()
+mowa.zamknij()
