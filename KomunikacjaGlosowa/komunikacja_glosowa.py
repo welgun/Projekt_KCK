@@ -1,6 +1,7 @@
-import time #tylko do testow - pozniej usunac
+import time
 from piper.voice import PiperVoice
 import vosk
+vosk.SetLogLevel(-1)
 import pyaudio
 import queue
 import threading
@@ -11,12 +12,13 @@ class BladKonfiguracjiMowy(Exception):
 
 class MowaTrenera:
     def __init__(self):
+        self.koniec_inicjalizacji = False
         self.kolejka_zdan = queue.Queue()
-
         self._skonfiguruj_glos()
 
         self.glowny_watek = threading.Thread(target=self._glowny_watek_mowy, daemon=True)
         self.glowny_watek.start()
+        self.koniec_inicjalizacji = True
 
     def _skonfiguruj_glos(self):
         try:
@@ -62,11 +64,13 @@ class BladKonfiguracjiSluchu(Exception):
 
 class SluchTrenera:
     def __init__(self):
+        self.koniec_inicjalizacji = False
         self._skonfiguruj_sluch("vosk-model-pl")
         self.dziala = True
 
         self.watek_sluchania = threading.Thread(target=self._glowny_watek_sluchania, daemon=False)
         self.watek_sluchania.start()
+        self.koniec_inicjalizacji = True
 
     def _skonfiguruj_sluch(self, sciezka_modelu):
         # ... Twoja konfiguracja (bez zmian) ...
@@ -99,19 +103,28 @@ class SluchTrenera:
         print(f"Trener usłyszał: {tekst}") #do testow - mozna potem usunac
         if "koniec" in tekst or "wyłącz" in tekst:
             self.zamknij()
+        #tu mozna dodac nowe komendy
 
     def zamknij(self):
         self.dziala = False
+        time.sleep(0.2)
 
         self.strumien.stop_stream()
         self.strumien.close()
         self.pyaudio_instance.terminate()
 
+def czy_komunikacja_zostala_zainicjalizowana(mowa, sluch):
+    while mowa.koniec_inicjalizacji is False or sluch.koniec_inicjalizacji is False:
+        time.sleep(0.1)
+    return True
 
 #ponizej jest test komunikacji - do usuniecia pozniej
 
 mowa = MowaTrenera()
 sluch = SluchTrenera()
+
+if czy_komunikacja_zostala_zainicjalizowana(mowa, sluch):
+    print("Komunikacja zostala zainicjalizowana")
 
 mowa.powiedz("testowy tekst 1")
 mowa.powiedz("testowy tekst 2")
