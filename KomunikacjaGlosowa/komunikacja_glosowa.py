@@ -96,10 +96,10 @@ class SluchTrenera:
                 wynik = json.loads(self.rozpoznawacz.Result())
                 tekst = wynik.get("text", "")
                 if tekst:
-                    self.obsluz_rozpoznany_tekst(tekst)
+                    self._obsluz_rozpoznany_tekst(tekst)
                     time.sleep(0.1)
 
-    def obsluz_rozpoznany_tekst(self, tekst):
+    def _obsluz_rozpoznany_tekst(self, tekst):
         print(f"Trener usłyszał: {tekst}") #do testow - mozna potem usunac
         if "koniec" in tekst or "wyłącz" in tekst:
             self.zamknij()
@@ -131,3 +131,4 @@ mowa.powiedz("testowy tekst 2")
 mowa.powiedz("ostatnie zdanie")
 
 mowa.zamknij()
+#sluch zostanie zamkniety po komendzie "koniec" lub "wyłącz"
