@@ -4,6 +4,8 @@ import mediapipe as mp
 mp_pozycja = mp.solutions.pose
 mp_rysowanie = mp.solutions.drawing_utils
 film = cv2.VideoCapture(0)
+cv2.namedWindow("Asystent Martwego Ciagu", cv2.WINDOW_NORMAL)
+cv2.resizeWindow("Asystent Martwego Ciagu", 1280, 720)
 pozycja = mp_pozycja.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
 faza_ruchu = "GORA"
@@ -60,6 +62,7 @@ while film.isOpened():
     if not sukces:
         print("Nie udało się pobrać obrazu z kamery")
         break
+    klatka = cv2.flip(klatka, 1)
     klatka_rgb = cv2.cvtColor(klatka, cv2.COLOR_BGR2RGB)
     wynik = pozycja.process(klatka_rgb)
     if wynik.pose_landmarks:
