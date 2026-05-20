@@ -6,6 +6,8 @@ mp_rysowanie = mp.solutions.drawing_utils
 film = cv2.VideoCapture(0)
 pozycja = mp_pozycja.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
+faza_ruchu = "GORA" 
+
 def analizuj_martwy_ciag(punkty):
     L_ramie = punkty[mp_pozycja.PoseLandmark.LEFT_SHOULDER]
     P_ramie = punkty[mp_pozycja.PoseLandmark.RIGHT_SHOULDER]
@@ -15,7 +17,8 @@ def analizuj_martwy_ciag(punkty):
     P_stopa = punkty[mp_pozycja.PoseLandmark.RIGHT_ANKLE]
     L_kolano = punkty[mp_pozycja.PoseLandmark.LEFT_KNEE]
     P_kolano = punkty[mp_pozycja.PoseLandmark.RIGHT_KNEE]
-
+    L_biodro = punkty[mp_pozycja.PoseLandmark.LEFT_HIP]
+    P_biodro = punkty[mp_pozycja.PoseLandmark.RIGHT_HIP]
     szerokosc_ramion = abs(L_ramie.x - P_ramie.x)
     szerokosc_stop = abs(L_stopa.x - P_stopa.x)
     szerokosc_dloni = abs(L_reka.x - P_reka.x)
@@ -37,7 +40,11 @@ def analizuj_martwy_ciag(punkty):
         komunikat = "Pilnuj kolan musza byc nad stopami"
     else:
         komunikat = "Poprawna postawa"
-    return komunikat
+
+    wysokosc_dloni = (L_reka.y + P_reka.y) / 2
+    wysokosc_bioder = (L_biodro.y + P_biodro.y) / 2
+    wysokosc_kolan = (L_kolano.y + P_kolano.y) / 2
+    return komunikat, wysokosc_dloni, wysokosc_bioder, wysokosc_kolan
 
 while film.isOpened():
     sukces, klatka = film.read()
@@ -49,8 +56,15 @@ while film.isOpened():
     if wynik.pose_landmarks:
         punkty = wynik.pose_landmarks.landmark
         mp_rysowanie.draw_landmarks(klatka, wynik.pose_landmarks, mp_pozycja.POSE_CONNECTIONS)
-        komunikat = analizuj_martwy_ciag(punkty)
-        cv2.putText(klatka, f"Wskazowka: {komunikat}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+        komunikat, y_dloni, y_bioder, y_kolan = analizuj_martwy_ciag(punkty)
+        if faza_ruchu == "GORA":
+            if y_dloni > y_kolan:
+                faza_ruchu = "DOL"        
+        elif faza_ruchu == "DOL":
+            if y_dloni < y_bioder:
+                faza_ruchu = "GORA"
+    cv2.putText(klatka, f"Wskazowka: {komunikat}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+    cv2.putText(klatka, f"Faza: {faza_ruchu}", (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
     cv2.imshow("Asystent Martwego Ciagu", klatka)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
