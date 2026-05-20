@@ -6,7 +6,9 @@ mp_rysowanie = mp.solutions.drawing_utils
 film = cv2.VideoCapture(0)
 pozycja = mp_pozycja.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
-faza_ruchu = "GORA" 
+faza_ruchu = "GORA"
+licznik_powtorzen = 0
+brak_bledu_cwiczenia = True
 
 def analizuj_martwy_ciag(punkty):
     L_ramie = punkty[mp_pozycja.PoseLandmark.LEFT_SHOULDER]
@@ -26,25 +28,32 @@ def analizuj_martwy_ciag(punkty):
     przesuniecie_L_kolana = abs(L_kolano.x - L_stopa.x)
     przesuniecie_P_kolana = abs(P_kolano.x - P_stopa.x)
 
+    poprawna_postawa = True
     komunikat = ""
     tolerancja_kolan = 0.06 
     if szerokosc_stop > szerokosc_ramion * 1.2:
         komunikat = "Zwez stopy"
+        poprawna_postawa = False
     elif szerokosc_stop < szerokosc_ramion * 0.8:
         komunikat = "Rozszerz stopy"
+        poprawna_postawa = False
     elif szerokosc_dloni < szerokosc_stop * 1.05:
         komunikat = "Zlap sztange szerzej"
+        poprawna_postawa = False
     elif szerokosc_dloni > szerokosc_ramion * 1.4:
         komunikat = "Zlap sztange weziej"
+        poprawna_postawa = False
     elif przesuniecie_L_kolana > tolerancja_kolan or przesuniecie_P_kolana > tolerancja_kolan:
         komunikat = "Pilnuj kolan musza byc nad stopami"
+        poprawna_postawa = False
     else:
         komunikat = "Poprawna postawa"
+        poprawna_postawa = True
 
     wysokosc_dloni = (L_reka.y + P_reka.y) / 2
     wysokosc_bioder = (L_biodro.y + P_biodro.y) / 2
     wysokosc_kolan = (L_kolano.y + P_kolano.y) / 2
-    return komunikat, wysokosc_dloni, wysokosc_bioder, wysokosc_kolan
+    return komunikat, wysokosc_dloni, wysokosc_bioder, wysokosc_kolan, poprawna_postawa
 
 while film.isOpened():
     sukces, klatka = film.read()
@@ -56,15 +65,21 @@ while film.isOpened():
     if wynik.pose_landmarks:
         punkty = wynik.pose_landmarks.landmark
         mp_rysowanie.draw_landmarks(klatka, wynik.pose_landmarks, mp_pozycja.POSE_CONNECTIONS)
-        komunikat, y_dloni, y_bioder, y_kolan = analizuj_martwy_ciag(punkty)
+        komunikat, y_dloni, y_bioder, y_kolan, postawa_poprawna = analizuj_martwy_ciag(punkty)
         if faza_ruchu == "GORA":
             if y_dloni > y_kolan:
-                faza_ruchu = "DOL"        
+                faza_ruchu = "DOL"
+                brak_bledu_cwiczenia = True     
         elif faza_ruchu == "DOL":
+            if not postawa_poprawna:
+                brak_bledu_cwiczenia = False
             if y_dloni < y_bioder:
                 faza_ruchu = "GORA"
+                if brak_bledu_cwiczenia:
+                    licznik_powtorzen += 1
     cv2.putText(klatka, f"Wskazowka: {komunikat}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
     cv2.putText(klatka, f"Faza: {faza_ruchu}", (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+    cv2.putText(klatka, f"Powtorzenia: {licznik_powtorzen}", (20, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
     cv2.imshow("Asystent Martwego Ciagu", klatka)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
