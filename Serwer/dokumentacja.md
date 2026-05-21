@@ -19,29 +19,36 @@ Lista aktualnie zaimplementowanych endpointów.
 *   **Metoda HTTP:** `POST`
 
 **Zapytanie:**
+```json
 {
   "username": "nazwa_uzytkownika",
   "password": "haslo_uzytkownika"
 }
-
+```
 **Odpowiedzi:**
 
 * **HTTP 200 OK**
+```json
 {
   "message": "Zalogowano pomyślnie!",
   "user_id": 1,
   "username": "admin"
 }
+```
 
 * **HTTP 401 Unauthorized**
+```json
 {
   "error": "Nieprawidłowy login lub hasło"
 }
+```
 
 * **HTTP 400 Bad Request**
+```json
 {
   "error": "Brak loginu lub hasła"
 }
+```
 
 ---
 
@@ -51,31 +58,40 @@ Lista aktualnie zaimplementowanych endpointów.
 *   **Metoda HTTP:** `POST`
 
 **Zapytanie:**
+```json
 {
   "username": "nowy_uzytkownik",
   "password": "nowe_haslo"
 }
+```
 
 **Odpowiedzi:**
 
 * **HTTP 201 Created** (Użytkownik został pomyślnie utworzony)
+```json
 {
   "message": "Zarejestrowano pomyślnie!",
   "user_id": 2,
   "username": "nowy_uzytkownik"
 }
+```
 
 * **HTTP 409 Conflict** (Login jest już zajęty)
+```json
 {
   "error": "Użytkownik o takim loginie już istnieje"
 }
+```
 
 * **HTTP 400 Bad Request** (Brak wymaganych danych w zapytaniu)
+```json
 {
   "error": "Brak loginu lub hasła"
 }
+```
 
 * **HTTP 500 Internal Server Error** 
+```json
 {
   "error": "Błąd bazy danych podczas rejestracji"
 }
