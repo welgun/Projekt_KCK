@@ -2,11 +2,11 @@
 
 # 📂Wymagania:
 ### Aby komunikacja głosowa działała wymagane są pliki/katalogi:
-- vosk_model_pl
+- vosk_model_pl (folder z wymaganą zawartością)
 - pl_PL-mc_speech-medium.onnx
 - pl_PL-mc_speech-medium.json
 
-Są one dostępne w repozytorium.
+Są one dostępne w repozytorium w folderze komunikacja glosowa.
 
 # 🔊Klasa MowaTrenera()
 ## Dostępne metody dla użytkownika:
@@ -38,7 +38,8 @@ Można ją użyć gdy zamykamy program w inny sposób, na przykład:
 # Funkcja pomcnicza
 ### czy_komunikacja_zostala_zainicjalizowana(mowa, sluch) 
 Dzięki tej funkcji możemy sprawdzić czy inicjalizacja komunikacji przebiegła pomyślnie.
-Funkcja ta blokuje wykonanie programu do momentu zakończenia konfiguracji
+Funkcja ta blokuje wykonanie programu do momentu zakończenia konfiguracji.
+Warto użyć jej po utworzeniu obu klas.
 
 # 💻 Przykład użycia
     mowa = MowaTrenera()

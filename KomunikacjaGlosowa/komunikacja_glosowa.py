@@ -1,5 +1,5 @@
 import time
-from piper.voice import PiperVoice
+from piper.voice import PiperVoice #zamiast pyttsx3
 import vosk
 vosk.SetLogLevel(-1)
 import pyaudio
@@ -73,7 +73,6 @@ class SluchTrenera:
         self.koniec_inicjalizacji = True
 
     def _skonfiguruj_sluch(self, sciezka_modelu):
-        # ... Twoja konfiguracja (bez zmian) ...
         try:
             model = vosk.Model(sciezka_modelu)
             self.rozpoznawacz = vosk.KaldiRecognizer(model, 16000)
