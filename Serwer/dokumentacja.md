@@ -79,3 +79,62 @@ Lista aktualnie zaimplementowanych endpointów.
 {
   "error": "Błąd bazy danych podczas rejestracji"
 }
+
+### Zmiana hasła
+
+*   **Endpoint:** `/api/change_password`
+*   **Metoda HTTP:** `PUT`
+
+
+**Zapytanie:**
+{
+    "username": "admin",
+    "old_password": "test1234",
+    "new_password": "nowe_bezpieczne_haslo"
+}
+
+**Odpowiedzi:**
+
+* **HTTP 201 Created**
+{
+  "message": "Hasło zostało zmienione pomyślnie!"
+}
+
+* **HTTP 400 Bad Request** (Brak wszystkich wymaganych pól)
+{
+  "error": "Brak nazwy użytkownika, starego lub nowego hasła"
+}
+
+* **HTTP 401 Unauthorized** (Podano błędne obecne hasło lub użytkownik nie istnieje)
+{
+  "error": "Nieprawidłowy login lub aktualne hasło"
+}
+* **HTTP 500 Internal Server Error**
+{
+  "error": "Błąd bazy danych podczas zmiany hasła"
+}
+
+### Usuwanie użytkownika
+
+*   **Endpoint:** `/api/delete_account`
+*   **Metoda HTTP:** `DELETE`
+
+* **HTTP 200** (usunięto konto)
+{
+  "message": "Konto zostało trwale usunięte."
+}
+
+* **HTTP 400 Bad Request** (Brak loginu lub hasła w zapytaniu)
+{
+  "error": "Brak loginu lub hasła"
+}
+
+* **HTTP 401 Unauthorized** (Podano błędne hasło przy próbie usunięcia)
+{
+  "error": "Nieprawidłowy login lub hasło"
+}
+
+* **HTTP 500 Internal Server Error**
+{
+  "error": "Błąd bazy danych podczas usuwania konta"
+}

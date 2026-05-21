@@ -93,5 +93,66 @@ def register():
     finally:
         conn.close()
 
+@app.route('/api/change_password', methods=['PUT'])
+def change_password():
+    data = request.get_json()
+    
+    # Sprawdzamy, czy przesłano wszystkie wymagane pola
+    if not data or not data.get('username') or not data.get('old_password') or not data.get('new_password'):
+        return jsonify({"error": "Brak nazwy użytkownika, starego lub nowego hasła"}), 400
+
+    username = data['username']
+    old_password = data['old_password']
+    new_password = data['new_password']
+
+    conn = get_db()
+    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+
+    # Weryfikacja: czy użytkownik istnieje i czy stare hasło się zgadza
+    if user and check_password_hash(user['password_hash'], old_password):
+        new_hashed_password = generate_password_hash(new_password)
+        
+        try:
+            conn.execute('UPDATE users SET password_hash = ? WHERE id = ?', (new_hashed_password, user['id']))
+            conn.commit()
+            return jsonify({"message": "Hasło zostało zmienione pomyślnie!"}), 200
+        except sqlite3.Error:
+            conn.rollback()
+            return jsonify({"error": "Błąd bazy danych podczas zmiany hasła"}), 500
+        finally:
+            conn.close()
+    else:
+        conn.close()
+        return jsonify({"error": "Nieprawidłowy login lub aktualne hasło"}), 401
+
+
+@app.route('/api/delete_account', methods=['DELETE'])
+def delete_account():
+    data = request.get_json()
+    
+    if not data or not data.get('username') or not data.get('password'):
+        return jsonify({"error": "Brak loginu lub hasła"}), 400
+
+    username = data['username']
+    password = data['password']
+
+    conn = get_db()
+    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+
+    # Weryfikacja: potwierdzamy tożsamość przed usunięciem konta
+    if user and check_password_hash(user['password_hash'], password):
+        try:
+            conn.execute('DELETE FROM users WHERE id = ?', (user['id'],))
+            conn.commit()
+            return jsonify({"message": "Konto zostało trwale usunięte."}), 200
+        except sqlite3.Error:
+            conn.rollback()
+            return jsonify({"error": "Błąd bazy danych podczas usuwania konta"}), 500
+        finally:
+            conn.close()
+    else:
+        conn.close()
+        return jsonify({"error": "Nieprawidłowy login lub hasło"}), 401
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
