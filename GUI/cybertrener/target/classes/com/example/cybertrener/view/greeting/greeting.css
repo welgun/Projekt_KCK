@@ -1,0 +1,12 @@
+.root {
+    -fx-background-color: #34FAEA;
+}
+
+.greetLabel {
+    -fx-font-size: 80px;
+    -fx-font-family: "Bitcount Prop Single";
+}
+
+.podpis {
+    -fx-font-size: 30px;
+}
