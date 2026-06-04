@@ -12,6 +12,7 @@ faza_ruchu = "GORA"
 licznik_powtorzen = 0
 brak_bledu_cwiczenia = True
 
+cel_powtorzen = 5
 def analizuj_martwy_ciag(punkty):
     L_ramie = punkty[mp_pozycja.PoseLandmark.LEFT_SHOULDER]
     P_ramie = punkty[mp_pozycja.PoseLandmark.RIGHT_SHOULDER]
@@ -83,6 +84,14 @@ while film.isOpened():
     cv2.putText(klatka, f"Wskazowka: {komunikat}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
     cv2.putText(klatka, f"Faza: {faza_ruchu}", (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
     cv2.putText(klatka, f"Powtorzenia: {licznik_powtorzen}", (20, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+    cv2.putText(klatka, f"Pozostalo: {cel_powtorzen - licznik_powtorzen}", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+    if licznik_powtorzen >= cel_powtorzen:
+        rozmiar_tekstu = cv2.getTextSize("UDALO SIE!", cv2.FONT_HERSHEY_SIMPLEX, 3, 6)[0]
+        cv2.putText(klatka, "UDALO SIE!", ((klatka.shape[1] - rozmiar_tekstu[0]) // 2, (klatka.shape[0] + rozmiar_tekstu[1]) // 2), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 6)
+        cv2.imshow("Asystent Martwego Ciagu", klatka)
+        cv2.waitKey(3000)
+        break
     cv2.imshow("Asystent Martwego Ciagu", klatka)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
