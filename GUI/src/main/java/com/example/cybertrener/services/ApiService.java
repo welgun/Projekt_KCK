@@ -1,0 +1,104 @@
+package com.example.cybertrener.services;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.function.Consumer;
+
+public class ApiService {
+
+    private static final String BASE_URL = "http://localhost:5000";
+    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final Gson gson = new Gson();
+
+    private static String getErrorMessage(String responseBody, int statusCode) {
+        try {
+            JsonObject json = gson.fromJson(responseBody, JsonObject.class);
+            if (json != null && json.has("error")) {
+                return json.get("error").getAsString();
+            }
+        } catch (Exception e) {
+
+        }
+        return "Nieoczekiwany błąd serwera. Kod: " + statusCode;
+    }
+
+    public static void loginUser(String username, String password, Runnable onSuccess, Consumer<String> onError) {
+        JsonObject jsonBody = new JsonObject();
+        jsonBody.addProperty("username", username);
+        jsonBody.addProperty("password", password);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/api/login"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody.toString()))
+                .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() == 200) {
+                        onSuccess.run();
+                    } else {
+                        onError.accept(getErrorMessage(response.body(), response.statusCode()));
+                    }
+                })
+                .exceptionally(e -> {
+                    onError.accept("Brak połączenia z serwerem bazy danych.");
+                    return null;
+                });
+    }
+
+    public static void registerUser(String username, String password, Runnable onSuccess, Consumer<String> onError) {
+        JsonObject jsonBody = new JsonObject();
+        jsonBody.addProperty("username", username);
+        jsonBody.addProperty("password", password);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/api/register"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody.toString()))
+                .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() == 201) {
+                        onSuccess.run();
+                    } else {
+                        onError.accept(getErrorMessage(response.body(), response.statusCode()));
+                    }
+                })
+                .exceptionally(e -> {
+                    onError.accept("Brak połączenia z serwerem bazy danych.");
+                    return null;
+                });
+    }
+
+    public static void changePassword(String username, String oldPassword, String newPassword, Runnable onSuccess, Consumer<String> onError) {
+        JsonObject jsonBody = new JsonObject();
+        jsonBody.addProperty("username", username);
+        jsonBody.addProperty("old_password", oldPassword);
+        jsonBody.addProperty("new_password", newPassword);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/api/change_password"))
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(jsonBody.toString()))
+                .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() == 200 || response.statusCode() == 201) {
+                        onSuccess.run();
+                    } else {
+                        onError.accept(getErrorMessage(response.body(), response.statusCode()));
+                    }
+                })
+                .exceptionally(e -> {
+                    onError.accept("Brak połączenia z serwerem bazy danych.");
+                    return null;
+                });
+    }
+}
