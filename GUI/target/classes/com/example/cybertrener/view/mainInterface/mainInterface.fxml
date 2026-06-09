@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.layout.Region?>
+
+<StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1280.0" stylesheets="@mainInterface.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.cybertrener.controllers.MainInterfaceController">
+   <children>
+      <VBox fx:id="cameraContainer" prefHeight="720.0" prefWidth="1280.0">
+         <StackPane.margin>
+            <Insets />
+         </StackPane.margin>
+      </VBox>
+
+      <VBox fx:id="sideMenu" maxHeight="1.7976931348623157E308" maxWidth="300.0" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="300.0" StackPane.alignment="TOP_LEFT">
+         <children>
+            <VBox alignment="CENTER" prefHeight="135.0" prefWidth="100.0">
+               <children>
+                  <Label styleClass="menu-header" text="Menu główne">
+                     <font>
+                        <Font size="36.0" />
+                     </font>
+                  </Label>
+               </children>
+            </VBox>
+            <VBox alignment="CENTER" prefHeight="100.0" prefWidth="100.0">
+               <children>
+                  <Label alignment="CENTER" styleClass="menu-item" text="Statystyki">
+                     <font>
+                        <Font size="24.0" />
+                     </font>
+                  </Label>
+               </children>
+            </VBox>
+            <VBox alignment="CENTER" prefHeight="100.0" prefWidth="100.0">
+               <children>
+                  <Label styleClass="menu-item" text="Historia treningów">
+                     <font>
+                        <Font size="24.0" />
+                     </font>
+                  </Label>
+               </children>
+            </VBox>
+            <VBox alignment="CENTER" prefHeight="100.0" prefWidth="100.0">
+               <children>
+                  <Label onMouseClicked="#handleSettingsClick" styleClass="menu-item" text="Ustawienia">
+                     <font>
+                        <Font size="24.0" />
+                     </font>
+                  </Label>
+               </children>
+            </VBox>
+
+            <Region VBox.vgrow="ALWAYS" />
+
+            <VBox alignment="CENTER" prefHeight="100.0" prefWidth="100.0">
+               <VBox.margin>
+                  <Insets bottom="40.0" />
+               </VBox.margin>
+               <children>
+                  <Label onMouseClicked="#handleLogout" styleClass="menu-item" text="Wyloguj się" style="-fx-text-fill: #ff4444;">
+                     <font>
+                        <Font size="24.0" />
+                     </font>
+                  </Label>
+               </children>
+            </VBox>
+
+         </children>
+      </VBox>
+
+      <Button fx:id="menuButton" mnemonicParsing="false" onAction="#toggleMenu" StackPane.alignment="TOP_LEFT">
+         <StackPane.margin>
+            <Insets left="50.0" top="50.0" />
+         </StackPane.margin>
+         <graphic>
+            <ImageView fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@../../img/menu-img.png" />
+               </image>
+            </ImageView>
+         </graphic>
+      </Button>
+
+      <StackPane fx:id="setupOverlay" prefHeight="720.0" prefWidth="1280.0">
+         <children>
+
+            <VBox fx:id="loginBox" alignment="CENTER" maxHeight="-Infinity" maxWidth="400.0" spacing="15.0">
+               <children>
+                  <Label styleClass="menu-header" text="Logowanie" />
+                  <Label styleClass="form-label" text="Login:" />
+                  <TextField fx:id="loginNickField" />
+                  <Label styleClass="form-label" text="Hasło:" />
+                  <PasswordField fx:id="loginPasswdField" style="-fx-padding-bottom: 20"/>
+
+                  <VBox alignment="CENTER" spacing="5.0">
+                     <children>
+                        <Label onMouseClicked="#showRegisterForm" text="Nie masz konta? Zarejestruj się" style="-fx-text-fill: #17171E; -fx-cursor: hand; -fx-font-weight: bold;" />
+                        <Label onMouseClicked="#showChangePasswordForm" text="Zmień hasło" style="-fx-text-fill: #17171E; -fx-cursor: hand; -fx-font-weight: bold;" />
+                     </children>
+                  </VBox>
+
+                  <Button fx:id="loginButton" mnemonicParsing="false" onAction="#handleLogin" styleClass="start-button" text="Zaloguj się" />
+
+                  <Label fx:id="loginErrorLabel" textAlignment="CENTER" wrapText="true" style="-fx-text-fill: #ff3333; -fx-font-family: 'Barlow Light'; -fx-font-weight: bold;" />
+               </children>
+            </VBox>
+
+            <VBox fx:id="registerBox" alignment="CENTER" maxHeight="-Infinity" maxWidth="400.0" spacing="15.0" visible="false">
+               <children>
+                  <Label styleClass="menu-header" text="Rejestracja" />
+                  <Label styleClass="form-label" text="Login:" />
+                  <TextField fx:id="regNickField" />
+                  <Label styleClass="form-label" text="Hasło:" />
+                  <PasswordField fx:id="regPasswdField" />
+                  <Label styleClass="form-label" text="Powtórz hasło:" />
+                  <PasswordField fx:id="regConfirmPasswdField" />
+
+                  <Label onMouseClicked="#showLoginForm" text="Masz już konto? Zaloguj się" style="-fx-text-fill: #17171E; -fx-cursor: hand; -fx-font-weight: bold;" />
+
+                  <Button fx:id="registerButton" mnemonicParsing="false" onAction="#handleRegister" styleClass="start-button" text="Utwórz konto" />
+
+                  <Label fx:id="registerErrorLabel" textAlignment="CENTER" wrapText="true" style="-fx-text-fill: #ff3333; -fx-font-family: 'Barlow Light'; -fx-font-weight: bold;" />
+               </children>
+            </VBox>
+
+            <VBox fx:id="changePasswordBox" alignment="CENTER" maxHeight="-Infinity" maxWidth="400.0" spacing="15.0" visible="false">
+               <children>
+                  <Label styleClass="menu-header" text="Zmiana hasła" />
+                  <Label styleClass="form-label" text="Login:" />
+                  <TextField fx:id="changePwNickField" />
+                  <Label styleClass="form-label" text="Stare hasło:" />
+                  <PasswordField fx:id="oldPasswdField" />
+                  <Label styleClass="form-label" text="Nowe hasło:" />
+                  <PasswordField fx:id="newPasswdField" />
+
+                  <Label onMouseClicked="#hideChangePasswordForm" text="Anuluj" style="-fx-cursor: hand; -fx-font-weight: bold;" />
+
+                  <Button fx:id="changePwButton" mnemonicParsing="false" onAction="#handleChangePassword" styleClass="start-button" text="Zapisz nowe hasło" />
+
+                  <Label fx:id="changePwErrorLabel" textAlignment="CENTER" wrapText="true" style="-fx-text-fill: #ff3333; -fx-font-family: 'Barlow Light'; -fx-font-weight: bold;" />
+               </children>
+            </VBox>
+
+         </children>
+      </StackPane>
+   </children>
+</StackPane>
