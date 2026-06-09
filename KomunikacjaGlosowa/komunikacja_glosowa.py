@@ -1,14 +1,17 @@
 import time
-from piper.voice import PiperVoice #zamiast pyttsx3
+from piper.voice import PiperVoice
 import vosk
+import os
 vosk.SetLogLevel(-1)
 import pyaudio
 import queue
 import threading
 import json
 
+
 class BladKonfiguracjiMowy(Exception):
     pass
+
 
 class MowaTrenera:
     def __init__(self):
@@ -16,13 +19,16 @@ class MowaTrenera:
         self.kolejka_zdan = queue.Queue()
         self._skonfiguruj_glos()
 
-        self.glowny_watek = threading.Thread(target=self._glowny_watek_mowy, daemon=True)
+        self.glowny_watek = threading.Thread(target=self._glowny_watek_mowy, daemon=False)
         self.glowny_watek.start()
         self.koniec_inicjalizacji = True
 
     def _skonfiguruj_glos(self):
         try:
-            self.glos = PiperVoice.load("pl_PL-mc_speech-medium.onnx")
+            katalog_obecny = os.path.dirname(os.path.abspath(__file__))
+            sciezka_modelu = os.path.join(katalog_obecny, "pl_PL-mc_speech-medium.onnx")
+
+            self.glos = PiperVoice.load(sciezka_modelu)
             self.pyaudio_instance = pyaudio.PyAudio()
 
             self.strumien = self.pyaudio_instance.open(
@@ -58,6 +64,7 @@ class MowaTrenera:
         self.strumien.close()
         self.pyaudio_instance.terminate()
 
+
 class BladKonfiguracjiSluchu(Exception):
     pass
 
@@ -65,7 +72,13 @@ class BladKonfiguracjiSluchu(Exception):
 class SluchTrenera:
     def __init__(self):
         self.koniec_inicjalizacji = False
-        self._skonfiguruj_sluch("vosk-model-pl")
+        self.pauza = False
+        self.zadanie_resetu = False
+
+        katalog_obecny = os.path.dirname(os.path.abspath(__file__))
+        sciezka_vosk = os.path.join(katalog_obecny, "vosk-model-pl")
+
+        self._skonfiguruj_sluch(sciezka_vosk)
         self.dziala = True
 
         self.watek_sluchania = threading.Thread(target=self._glowny_watek_sluchania, daemon=False)
@@ -90,19 +103,43 @@ class SluchTrenera:
 
     def _glowny_watek_sluchania(self):
         while self.dziala:
-            dane = self.strumien.read(4000, exception_on_overflow=False)
-            if self.rozpoznawacz.AcceptWaveform(dane):
-                wynik = json.loads(self.rozpoznawacz.Result())
-                tekst = wynik.get("text", "")
-                if tekst:
-                    self._obsluz_rozpoznany_tekst(tekst)
-                    time.sleep(0.1)
+            try:
+                if not self.dziala:
+                    break
+                dane = self.strumien.read(4000, exception_on_overflow=False)
+                if self.rozpoznawacz.AcceptWaveform(dane):
+                    wynik = json.loads(self.rozpoznawacz.Result())
+                    tekst = wynik.get("text", "")
+                    if tekst:
+                        self._obsluz_rozpoznany_tekst(tekst)
+                        time.sleep(0.1)
+            except Exception as e:
+                break
 
     def _obsluz_rozpoznany_tekst(self, tekst):
-        print(f"Trener usłyszał: {tekst}") #do testow - mozna potem usunac
-        if "koniec" in tekst or "wyłącz" in tekst:
+        print(f"Trener usłyszał: {tekst}")
+        slowa_kluczowe_koniec = ["koniec", "wyłącz", "wylacz", "stop"]
+        slowa_kluczowe_pauza = ["pauza", "przerwa"]
+        slowa_kluczowe_reset = ["reset", "od nowa"]
+
+        if any(slowo in tekst for slowo in slowa_kluczowe_koniec):
+            print("Wykryto komendę zamknięcia. Zamykam zasoby audio...")
             self.zamknij()
-        #tu mozna dodac nowe komendy
+        elif any(slowo in tekst for slowo in slowa_kluczowe_pauza):
+            self.pauza = not self.pauza
+            print(f"Zmieniono stan pauzy: {self.pauza}")
+        elif any(slowo in tekst for slowo in slowa_kluczowe_reset):
+            self.zadanie_resetu = True
+            print("Wykryto komendę resetu.")
+
+    def sprawdz_i_wyczysc_reset(self):
+        if self.zadanie_resetu:
+            self.zadanie_resetu = False
+            return True
+        return False
+
+    def czy_jest_pauza(self):
+        return self.pauza
 
     def zamknij(self):
         self.dziala = False
@@ -112,22 +149,11 @@ class SluchTrenera:
         self.strumien.close()
         self.pyaudio_instance.terminate()
 
+    def czy_dziala(self):
+        return self.dziala
+
+
 def czy_komunikacja_zostala_zainicjalizowana(mowa, sluch):
     while mowa.koniec_inicjalizacji is False or sluch.koniec_inicjalizacji is False:
         time.sleep(0.1)
     return True
-
-#ponizej jest test komunikacji - do usuniecia pozniej
-
-mowa = MowaTrenera()
-sluch = SluchTrenera()
-
-if czy_komunikacja_zostala_zainicjalizowana(mowa, sluch):
-    print("Komunikacja zostala zainicjalizowana")
-
-mowa.powiedz("testowy tekst 1")
-mowa.powiedz("testowy tekst 2")
-mowa.powiedz("ostatnie zdanie")
-
-mowa.zamknij()
-#sluch zostanie zamkniety po komendzie "koniec" lub "wyłącz"
