@@ -1,10 +1,20 @@
 import cv2
 import mediapipe as mp
 import math
+
+import sys
+import os
+
+aktualny_folder = os.path.dirname(os.path.abspath(__file__))
+folder_glowny = os.path.dirname(aktualny_folder)
+folder_komunikacji = os.path.join(folder_glowny, 'KomunikacjaGlosowa')
+sys.path.append(folder_komunikacji)
+
+from komunikacja_glosowa import MowaTrenera, SluchTrenera, czy_komunikacja_zostala_zainicjalizowana
+
 mp_pozycja = mp.solutions.pose
 mp_rysowanie = mp.solutions.drawing_utils
 film = cv2.VideoCapture(0)
-film_bok = cv2.VideoCapture(1)
 cv2.namedWindow("Asystent Martwego Ciagu", cv2.WINDOW_NORMAL)
 cv2.resizeWindow("Asystent Martwego Ciagu", 1280, 720)
 cv2.namedWindow("Widok Boczny", cv2.WINDOW_NORMAL)
@@ -16,6 +26,8 @@ licznik_powtorzen = 0
 brak_bledu_cwiczenia = True
 cel_powtorzen = 5
 komunikat = ""
+
+
 def analizuj_martwy_ciag(punkty, punkty_bok):
     L_ramie = punkty[mp_pozycja.PoseLandmark.LEFT_SHOULDER]
     P_ramie = punkty[mp_pozycja.PoseLandmark.RIGHT_SHOULDER]
@@ -76,27 +88,60 @@ def analizuj_martwy_ciag(punkty, punkty_bok):
     wysokosc_kolan = (L_kolano.y + P_kolano.y) / 2
     return komunikat, wysokosc_dloni, wysokosc_bioder, wysokosc_kolan, poprawna_postawa
 
-while film.isOpened() and film_bok.isOpened():
-    sukces, klatka = film.read()
-    sukces_bok, klatka_bok = film_bok.read()
-    if not sukces or not sukces_bok:
+
+mowa = MowaTrenera()
+sluch = SluchTrenera()
+if czy_komunikacja_zostala_zainicjalizowana(mowa, sluch):
+    print("Moduły głosowe gotowe.")
+mowa.powiedz("Witaj w asystencie martwego ciągu. Przygotuj się do ćwiczenia.")
+
+while film.isOpened():
+    if not sluch.czy_dziala():
+        mowa.powiedz("Zamykam program.")
+        import time
+
+        time.sleep(2)
+        break
+    sukces, nowa_klatka = film.read()
+    if not sukces:
         print("Nie udało się pobrać obrazu z kamery")
         break
-    klatka = cv2.flip(klatka, 1)
+
+    if sluch.czy_jest_pauza():
+        if 'klatka' in locals() and 'klatka_bok' in locals():
+            klatka_pauza = klatka.copy()
+            rozmiar_tekstu = cv2.getTextSize("PAUZA", cv2.FONT_HERSHEY_SIMPLEX, 3, 6)[0]
+            cv2.putText(klatka_pauza, "PAUZA", ((klatka_pauza.shape[1] - rozmiar_tekstu[0]) // 2, (klatka_pauza.shape[0] + rozmiar_tekstu[1]) // 2),cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 255), 6)
+            cv2.imshow("Asystent Martwego Ciagu", klatka_pauza)
+            cv2.imshow("Widok Boczny", klatka_bok)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+        continue
+
+    if sluch.sprawdz_i_wyczysc_reset():
+        licznik_powtorzen = 0
+        mowa.powiedz("Zeruję licznik powtórzeń.")
+
+    klatka = cv2.flip(nowa_klatka, 1)
+
+    klatka_bok = klatka.copy()
     klatka_rgb = cv2.cvtColor(klatka, cv2.COLOR_BGR2RGB)
     klatka_bok_rgb = cv2.cvtColor(klatka_bok, cv2.COLOR_BGR2RGB)
     wynik = pozycja.process(klatka_rgb)
     wynik_bok = pozycja_bok.process(klatka_bok_rgb)
+
     if wynik.pose_landmarks and wynik_bok.pose_landmarks:
         punkty_przod = wynik.pose_landmarks.landmark
         punkty_bok = wynik_bok.pose_landmarks.landmark
         mp_rysowanie.draw_landmarks(klatka, wynik.pose_landmarks, mp_pozycja.POSE_CONNECTIONS)
         mp_rysowanie.draw_landmarks(klatka_bok, wynik_bok.pose_landmarks, mp_pozycja.POSE_CONNECTIONS)
         komunikat, y_dloni, y_bioder, y_kolan, postawa_poprawna = analizuj_martwy_ciag(punkty_przod, punkty_bok)
+
         if faza_ruchu == "GORA":
             if y_dloni > y_kolan:
                 faza_ruchu = "DOL"
-                brak_bledu_cwiczenia = True     
+                brak_bledu_cwiczenia = True
         elif faza_ruchu == "DOL":
             if not postawa_poprawna:
                 brak_bledu_cwiczenia = False
@@ -104,23 +149,26 @@ while film.isOpened() and film_bok.isOpened():
                 faza_ruchu = "GORA"
                 if brak_bledu_cwiczenia:
                     licznik_powtorzen += 1
+
     cv2.putText(klatka, f"Wskazowka: {komunikat}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
     cv2.putText(klatka, f"Faza: {faza_ruchu}", (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
     cv2.putText(klatka, f"Powtorzenia: {licznik_powtorzen}", (20, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-    cv2.putText(klatka, f"Pozostalo: {cel_powtorzen - licznik_powtorzen}", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-
+    cv2.putText(klatka, f"Pozostalo: {cel_powtorzen - licznik_powtorzen}", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1,(0, 0, 255), 2)
 
     if licznik_powtorzen >= cel_powtorzen:
         rozmiar_tekstu = cv2.getTextSize("UDALO SIE!", cv2.FONT_HERSHEY_SIMPLEX, 3, 6)[0]
-        cv2.putText(klatka, "UDALO SIE!", ((klatka.shape[1] - rozmiar_tekstu[0]) // 2, (klatka.shape[0] + rozmiar_tekstu[1]) // 2), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 6)
+        cv2.putText(klatka, "UDALO SIE!",((klatka.shape[1] - rozmiar_tekstu[0]) // 2, (klatka.shape[0] + rozmiar_tekstu[1]) // 2),cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 6)
         cv2.imshow("Asystent Martwego Ciagu", klatka)
         cv2.imshow("Widok Boczny", klatka_bok)
         cv2.waitKey(3000)
         break
+
     cv2.imshow("Asystent Martwego Ciagu", klatka)
     cv2.imshow("Widok Boczny", klatka_bok)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+
 film.release()
-film_bok.release()
 cv2.destroyAllWindows()
+mowa.zamknij()
+sluch.zamknij()
