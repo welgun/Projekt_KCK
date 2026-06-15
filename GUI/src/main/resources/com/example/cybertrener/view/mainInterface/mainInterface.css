@@ -131,3 +131,28 @@
 .start-button:hover {
     -fx-background-color: #bce665;
 }
+
+.cyber-combo {
+    -fx-background-color: rgba(23, 23, 30, 0.7);
+    -fx-border-color: #34FAEA;
+    -fx-border-width: 2;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.cyber-combo .list-cell {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-family: "Barlow Light";
+    -fx-font-size: 16px;
+    -fx-alignment: CENTER;
+}
+
+.cyber-combo .list-view {
+    -fx-background-color: #17171E;
+    -fx-border-color: #34FAEA;
+}
+
+.cyber-combo .list-cell:hover {
+    -fx-background-color: #34FAEA;
+    -fx-text-fill: #17171E;
+}

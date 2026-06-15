@@ -45,15 +45,13 @@
     -fx-background-color: rgba(0, 0, 0, 0.85);
 }
 
-/* Tło całego okienka - Twój neonowy cyjan */
 #setupOverlay > VBox {
     -fx-background-color: #34FAEA;
     -fx-background-radius: 12;
     -fx-padding: 35;
-    -fx-effect: dropshadow(three-pass-box, rgba(52, 250, 234, 0.4), 40, 0, 0, 0); /* Świecąca poświata w kolorze tła */
+    -fx-effect: dropshadow(three-pass-box, rgba(52, 250, 234, 0.4), 40, 0, 0, 0);
 }
 
-/* Napis główny "Konfiguracja treningu" - ciemny dla ostrego kontrastu */
 #setupOverlay .menu-header {
     -fx-text-fill: #17171E;
     -fx-font-family: "Bitcount Prop Single";
@@ -61,7 +59,6 @@
     -fx-padding: 0 0 15 0;
 }
 
-/* Zwykłe napisy nad polami ("Nick:", "Ilość powtórzeń:") */
 #setupOverlay .form-label {
     -fx-text-fill: #17171E;
     -fx-font-family: "Barlow Light";
@@ -69,10 +66,9 @@
     -fx-font-weight: bold;
 }
 
-/* Pola tekstowe - ciemne z jasnym tekstem dla cyber-klimatu */
 #setupOverlay .text-field {
     -fx-background-color: #17171E;
-    -fx-text-fill: #FFFFFF; /* Biały tekst podczas pisania */
+    -fx-text-fill: #FFFFFF;
     -fx-border-color: transparent;
     -fx-padding: 12;
     -fx-font-family: "Barlow Light";
@@ -81,53 +77,47 @@
     -fx-border-radius: 8;
 }
 
-/* Efekt kliknięcia w pole tekstowe (biała obwódka) */
 #setupOverlay .text-field:focused {
     -fx-border-color: #FFFFFF;
     -fx-border-width: 2;
 }
 
-/* Przycisk "Zacznij trening!" */
 #setupOverlay .start-button {
-    -fx-background-color: #17171E; /* Ciemne tło przycisku */
-    -fx-text-fill: #34FAEA; /* Cyjanowy tekst na przycisku (odwrócenie kolorów) */
+    -fx-background-color: #17171E;
+    -fx-text-fill: #34FAEA;
     -fx-font-family: "Bitcount Prop Single";
     -fx-font-size: 18px;
     -fx-padding: 12 30 12 30;
     -fx-background-radius: 8;
     -fx-cursor: hand;
-    -fx-translate-y: 10; /* Lekkie odsunięcie w dół od pól tekstowych */
+    -fx-translate-y: 10;
 }
 
-/* Efekt najechania na przycisk */
 #setupOverlay .start-button:hover {
     -fx-background-color: #2A2A35;
     -fx-text-fill: #FFFFFF;
 }
 
-/* Zwykłe napisy nad polami */
 .form-label {
     -fx-text-fill: white;
     -fx-font-family: "Barlow Light";
     -fx-font-size: 14px;
 }
 
-/* Pola tekstowe */
 .text-field {
     -fx-background-color: #460BFB;
     -fx-text-fill: white;
     -fx-border-color: #555555;
-    -fx-border-width: 0 0 2 0; /* Pasek na dole */
+    -fx-border-width: 0 0 2 0;
     -fx-padding: 10;
     -fx-font-family: "Barlow Light";
     -fx-font-size: 16px;
 }
 
 .text-field:focused {
-    -fx-border-color: #DEFF9A; /* Neonowy pasek przy pisaniu */
+    -fx-border-color: #DEFF9A;
 }
 
-/* Przycisk start */
 .start-button {
     -fx-background-color: #DEFF9A;
     -fx-text-fill: #17171e;
@@ -140,4 +130,29 @@
 
 .start-button:hover {
     -fx-background-color: #bce665;
+}
+
+.cyber-combo {
+    -fx-background-color: rgba(23, 23, 30, 0.7);
+    -fx-border-color: #34FAEA;
+    -fx-border-width: 2;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.cyber-combo .list-cell {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-family: "Barlow Light";
+    -fx-font-size: 16px;
+    -fx-alignment: CENTER;
+}
+
+.cyber-combo .list-view {
+    -fx-background-color: #17171E;
+    -fx-border-color: #34FAEA;
+}
+
+.cyber-combo .list-cell:hover {
+    -fx-background-color: #34FAEA;
+    -fx-text-fill: #17171E;
 }

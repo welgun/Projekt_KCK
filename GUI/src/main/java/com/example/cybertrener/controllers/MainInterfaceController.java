@@ -6,13 +6,14 @@ import javafx.animation.ParallelTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
+import javafx.scene.control.ComboBox;
+import javafx.scene.image.ImageView;
+import javafx.animation.Timeline;
+import javafx.scene.image.Image;
 
 public class MainInterfaceController {
 
@@ -40,6 +41,13 @@ public class MainInterfaceController {
     @FXML private PasswordField newPasswdField;
     @FXML private Button changePwButton;
     @FXML private Label changePwErrorLabel;
+
+    @FXML private ImageView cameraView;
+    @FXML private ComboBox<String> cameraSelector;
+    @FXML private Button startCamButton;
+
+    private Timeline videoLoop;
+    private String currentView = "przod";
 
     private boolean isMenuOpen = false;
 
@@ -98,6 +106,21 @@ public class MainInterfaceController {
             changePwErrorLabel.setText("");
             validateChangePasswordForm();
         });
+        cameraSelector.getItems().addAll(
+                "Kamera Frontowa (Widok z przodu)",
+                "Kamera Boczna (Profil)"
+        );
+        cameraSelector.getSelectionModel().selectFirst();
+        cameraSelector.setOnAction(e -> {
+            if (cameraSelector.getSelectionModel().getSelectedIndex() == 0) {
+                currentView = "przod";
+            } else {
+                currentView = "bok";
+            }
+        });
+
+        // 2. Automatyczne uruchomienie odtwarzacza kamery!
+        startCameraStream();
     }
 
     private void validateLoginForm() {
@@ -307,5 +330,45 @@ public class MainInterfaceController {
         }
         ParallelTransition pt = new ParallelTransition(menuTran, buttonTran);
         pt.play();
+    }
+
+    @FXML
+    private void startTrainingStream() {
+        System.out.println("Przycisk ROZPOCZNIJ TRENING został wciśnięty!");
+        // Tutaj w przyszłości dodasz logikę zapisu statystyk lub uruchomienia algorytmu oceny!
+    }
+
+    private volatile boolean isCameraRunning = false;
+
+    private void startCameraStream() {
+        isCameraRunning = true;
+
+        Thread streamThread = new Thread(() -> {
+            while (isCameraRunning) {
+                try {
+                    // Generujemy URL z unikalnym czasem, żeby uniknąć cache'owania
+                    String url = "http://localhost:5001/api/video_feed?widok=" + currentView + "&time=" + System.currentTimeMillis();
+
+                    // UWAGA: false oznacza, że pobieramy obraz SYNCHRONICZNIE.
+                    // Ponieważ jesteśmy w osobnym wątku (nie w głównym GUI), interfejs się nie zatnie!
+                    Image frame = new Image(url, false);
+
+                    // Jeśli obraz pobrał się bez błędów, wrzucamy go na ekran
+                    if (!frame.isError()) {
+                        Platform.runLater(() -> cameraView.setImage(frame));
+                    }
+
+                    // Odczekujemy chwilę przed pobraniem kolejnej klatki (33ms = ok. 30 FPS)
+                    Thread.sleep(33);
+
+                } catch (Exception e) {
+                    // W razie błędu serwera czekamy pół sekundy, żeby nie zaspamować konsoli
+                    try { Thread.sleep(500); } catch (InterruptedException ex) {}
+                }
+            }
+        });
+
+        streamThread.setDaemon(true); // Ważne: wątek zostanie zabity, gdy wyłączysz aplikację krzyżykiem
+        streamThread.start();
     }
 }
