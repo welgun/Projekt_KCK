@@ -1,9 +1,12 @@
 import cv2
 import mediapipe as mp
 import math
-
+import time
 import sys
 import os
+import threading
+import numpy as np
+from flask import Flask, Response, request
 
 aktualny_folder = os.path.dirname(os.path.abspath(__file__))
 folder_glowny = os.path.dirname(aktualny_folder)
@@ -12,34 +15,23 @@ sys.path.append(folder_komunikacji)
 
 from komunikacja_glosowa import MowaTrenera, SluchTrenera, czy_komunikacja_zostala_zainicjalizowana
 
-import time
+app = Flask(__name__)
+
+aktualna_klatka_przod = None
+aktualna_klatka_bok = None
+
+def generuj_obraz_brak_kamery():
+    puste_tlo = np.zeros((720, 1280, 3), dtype=np.uint8)
+    rozmiar_tekstu = cv2.getTextSize("BRAK KAMERY / NIEPODLACZONA", cv2.FONT_HERSHEY_SIMPLEX, 2, 5)[0]
+    cv2.putText(puste_tlo, "BRAK KAMERY / NIEPODLACZONA",
+                ((1280 - rozmiar_tekstu[0]) // 2, (720 + rozmiar_tekstu[1]) // 2),
+                cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 5)
+    return puste_tlo
 
 CZAS_STABILIZACJI = 1.0
 CZAS_COOLDOWN = 4.0
 
-mp_pozycja = mp.solutions.pose
-mp_rysowanie = mp.solutions.drawing_utils
-film_przod = cv2.VideoCapture(0)
-film_bok = cv2.VideoCapture(1)
-
-cv2.namedWindow("Asystent Martwego Ciagu", cv2.WINDOW_NORMAL)
-cv2.resizeWindow("Asystent Martwego Ciagu", 1280, 720)
-cv2.namedWindow("Widok Boczny", cv2.WINDOW_NORMAL)
-cv2.resizeWindow("Widok Boczny", 1280, 720)
-pozycja = mp_pozycja.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
-pozycja_bok = mp_pozycja.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
-faza_ruchu = "GORA"
-licznik_powtorzen = 0
-brak_bledu_cwiczenia = True
-cel_powtorzen = 5
-komunikat = ""
-
-ostatni_komunikat_wykryty = ""
-czas_rozpoczecia_komunikatu = 0.0
-ostatni_powiedziany_komunikat = ""
-czas_ostatniego_mowienia = 0.0
-
-def analizuj_martwy_ciag(punkty, punkty_bok):
+def analizuj_martwy_ciag(punkty, punkty_bok, mp_pozycja):
     L_ramie = punkty[mp_pozycja.PoseLandmark.LEFT_SHOULDER]
     P_ramie = punkty[mp_pozycja.PoseLandmark.RIGHT_SHOULDER]
     L_reka = punkty[mp_pozycja.PoseLandmark.LEFT_WRIST]
@@ -99,117 +91,163 @@ def analizuj_martwy_ciag(punkty, punkty_bok):
     wysokosc_kolan = (L_kolano.y + P_kolano.y) / 2
     return komunikat, wysokosc_dloni, wysokosc_bioder, wysokosc_kolan, poprawna_postawa
 
+def watek_kamery():
+    global aktualna_klatka_przod, aktualna_klatka_bok
 
-mowa = MowaTrenera()
-sluch = SluchTrenera()
-if czy_komunikacja_zostala_zainicjalizowana(mowa, sluch):
-    print("Moduły głosowe gotowe.")
-mowa.powiedz("Witaj w asystencie martwego ciągu. Przygotuj się do ćwiczenia.")
+    from mediapipe.python.solutions import pose as mp_pose
+    from mediapipe.python.solutions import drawing_utils as mp_drawing
 
-if not film_przod.isOpened() or not film_bok.isOpened():
-    print("Nie udalo sie otworzyc obu kamer.")
-    mowa.powiedz("Nie wykryto dwóch kamer, kończę pracę.")
-    time.sleep(4)
-    if film_przod.isOpened(): film_przod.release()
-    if film_bok.isOpened(): film_bok.release()
+    mp_pozycja = mp_pose
+    mp_rysowanie = mp_drawing
+
+    pozycja = mp_pozycja.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+    pozycja_bok = mp_pozycja.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+
+    faza_ruchu = "GORA"
+    licznik_powtorzen = 0
+    brak_bledu_cwiczenia = True
+    cel_powtorzen = 5
+    komunikat = ""
+
+    ostatni_komunikat_wykryty = ""
+    czas_rozpoczecia_komunikatu = 0.0
+    ostatni_powiedziany_komunikat = ""
+    czas_ostatniego_mowienia = 0.0
+
+    mowa = MowaTrenera()
+    sluch = SluchTrenera()
+    if czy_komunikacja_zostala_zainicjalizowana(mowa, sluch):
+        print("Moduły głosowe gotowe.")
+    mowa.powiedz("Witaj w asystencie martwego ciągu. Przygotuj się do ćwiczenia.")
+
+    film_przod = cv2.VideoCapture(0)
+    film_bok = cv2.VideoCapture(1)
+
+    while True:
+        if not film_przod.isOpened() or not film_bok.isOpened():
+            obraz_bledu = generuj_obraz_brak_kamery()
+            aktualna_klatka_przod = obraz_bledu
+            aktualna_klatka_bok = obraz_bledu
+
+            time.sleep(1)
+            if not film_przod.isOpened():
+                film_przod = cv2.VideoCapture(0)
+            if not film_bok.isOpened():
+                film_bok = cv2.VideoCapture(1)
+            continue
+
+        if not sluch.czy_dziala():
+            mowa.powiedz("Zamykam program.")
+            time.sleep(2)
+            break
+
+        sukces_przod, nowa_klatka_przod = film_przod.read()
+        sukces_bok, nowa_klatka_bok = film_bok.read()
+
+        if not sukces_przod or not sukces_bok:
+            print("Nie udało się pobrać obrazu z kamer")
+            film_przod.release()
+            film_bok.release()
+            continue
+
+        if sluch.czy_jest_pauza():
+            if 'klatka' in locals() and 'klatka_bok' in locals():
+                klatka_pauza = klatka.copy()
+                rozmiar_tekstu = cv2.getTextSize("PAUZA", cv2.FONT_HERSHEY_SIMPLEX, 3, 6)[0]
+                cv2.putText(klatka_pauza, "PAUZA", ((klatka_pauza.shape[1] - rozmiar_tekstu[0]) // 2, (klatka_pauza.shape[0] + rozmiar_tekstu[1]) // 2),cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 255), 6)
+                aktualna_klatka_przod = klatka_pauza
+                aktualna_klatka_bok = klatka_bok
+            continue
+
+        if sluch.sprawdz_i_wyczysc_reset():
+            licznik_powtorzen = 0
+            mowa.powiedz("Zeruję licznik powtórzeń.")
+
+        klatka = cv2.flip(nowa_klatka_przod, 1)
+        klatka_bok = nowa_klatka_bok
+
+        klatka_rgb = cv2.cvtColor(klatka, cv2.COLOR_BGR2RGB)
+        klatka_bok_rgb = cv2.cvtColor(klatka_bok, cv2.COLOR_BGR2RGB)
+
+        wynik = pozycja.process(klatka_rgb)
+        wynik_bok = pozycja_bok.process(klatka_bok_rgb)
+
+        if wynik.pose_landmarks and wynik_bok.pose_landmarks:
+            punkty_przod = wynik.pose_landmarks.landmark
+            punkty_bok = wynik_bok.pose_landmarks.landmark
+            mp_rysowanie.draw_landmarks(klatka, wynik.pose_landmarks, mp_pozycja.POSE_CONNECTIONS)
+            mp_rysowanie.draw_landmarks(klatka_bok, wynik_bok.pose_landmarks, mp_pozycja.POSE_CONNECTIONS)
+            komunikat, y_dloni, y_bioder, y_kolan, postawa_poprawna = analizuj_martwy_ciag(punkty_przod, punkty_bok, mp_pozycja)
+
+            aktualny_czas = time.time()
+
+            if komunikat != ostatni_komunikat_wykryty:
+                ostatni_komunikat_wykryty = komunikat
+                czas_rozpoczecia_komunikatu = aktualny_czas
+
+            if aktualny_czas - czas_rozpoczecia_komunikatu >= CZAS_STABILIZACJI:
+                if komunikat == "Poprawna postawa":
+                    if ostatni_powiedziany_komunikat != "Poprawna postawa":
+                        mowa.powiedz("Poprawna postawa")
+                        ostatni_powiedziany_komunikat = "Poprawna postawa"
+                        czas_ostatniego_mowienia = aktualny_czas
+                else:
+                    if (ostatni_powiedziany_komunikat != komunikat) or (aktualny_czas - czas_ostatniego_mowienia >= CZAS_COOLDOWN):
+                        mowa.powiedz(komunikat)
+                        ostatni_powiedziany_komunikat = komunikat
+                        czas_ostatniego_mowienia = aktualny_czas
+
+            if faza_ruchu == "GORA":
+                if y_dloni > y_kolan:
+                    faza_ruchu = "DOL"
+                    brak_bledu_cwiczenia = True
+            elif faza_ruchu == "DOL":
+                if not postawa_poprawna:
+                    brak_bledu_cwiczenia = False
+                if y_dloni < y_bioder:
+                    faza_ruchu = "GORA"
+                    if brak_bledu_cwiczenia:
+                        licznik_powtorzen += 1
+
+        cv2.putText(klatka, f"Wskazowka: {komunikat}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+        cv2.putText(klatka, f"Faza: {faza_ruchu}", (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+        cv2.putText(klatka, f"Powtorzenia: {licznik_powtorzen}", (20, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.putText(klatka, f"Pozostalo: {cel_powtorzen - licznik_powtorzen}", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1,(0, 0, 255), 2)
+
+        if licznik_powtorzen >= cel_powtorzen:
+            rozmiar_tekstu = cv2.getTextSize("UDALO SIE!", cv2.FONT_HERSHEY_SIMPLEX, 3, 6)[0]
+            cv2.putText(klatka, "UDALO SIE!",((klatka.shape[1] - rozmiar_tekstu[0]) // 2, (klatka.shape[0] + rozmiar_tekstu[1]) // 2),cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 6)
+
+            aktualna_klatka_przod = klatka
+            aktualna_klatka_bok = klatka_bok
+
+            time.sleep(3)
+            licznik_powtorzen = 0
+            continue
+
+        aktualna_klatka_przod = klatka
+        aktualna_klatka_bok = klatka_bok
+
+    film_przod.release()
+    film_bok.release()
     mowa.zamknij()
     sluch.zamknij()
-    sys.exit()
 
-while film_przod.isOpened() and film_bok.isOpened():
-    if not sluch.czy_dziala():
-        mowa.powiedz("Zamykam program.")
+threading.Thread(target=watek_kamery, daemon=True).start()
 
-        time.sleep(2)
-        break
-    sukces_przod, nowa_klatka_przod = film_przod.read()
-    sukces_bok, nowa_klatka_bok = film_bok.read()
+@app.route('/api/video_feed')
+def video_feed():
+    widok = request.args.get('widok', 'przod')
 
-    if not sukces_przod or not sukces_bok:
-        print("Nie udało się pobrać obrazu z kamer")
-        break
+    klatka_do_wyslania = aktualna_klatka_przod if widok == "przod" else aktualna_klatka_bok
 
-    if sluch.czy_jest_pauza():
-        if 'klatka' in locals() and 'klatka_bok' in locals():
-            klatka_pauza = klatka.copy()
-            rozmiar_tekstu = cv2.getTextSize("PAUZA", cv2.FONT_HERSHEY_SIMPLEX, 3, 6)[0]
-            cv2.putText(klatka_pauza, "PAUZA", ((klatka_pauza.shape[1] - rozmiar_tekstu[0]) // 2, (klatka_pauza.shape[0] + rozmiar_tekstu[1]) // 2),cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 255), 6)
-            cv2.imshow("Asystent Martwego Ciagu", klatka_pauza)
-            cv2.imshow("Widok Boczny", klatka_bok)
+    if klatka_do_wyslania is None:
+        klatka_do_wyslania = generuj_obraz_brak_kamery()
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-        continue
+    ret, jpeg = cv2.imencode('.jpg', klatka_do_wyslania)
 
-    if sluch.sprawdz_i_wyczysc_reset():
-        licznik_powtorzen = 0
-        mowa.powiedz("Zeruję licznik powtórzeń.")
+    return Response(jpeg.tobytes(), mimetype='image/jpeg')
 
-    klatka = cv2.flip(nowa_klatka_przod, 1)
-
-    klatka_bok = nowa_klatka_bok
-    klatka_rgb = cv2.cvtColor(klatka, cv2.COLOR_BGR2RGB)
-    klatka_bok_rgb = cv2.cvtColor(klatka_bok, cv2.COLOR_BGR2RGB)
-    wynik = pozycja.process(klatka_rgb)
-    wynik_bok = pozycja_bok.process(klatka_bok_rgb)
-
-    if wynik.pose_landmarks and wynik_bok.pose_landmarks:
-        punkty_przod = wynik.pose_landmarks.landmark
-        punkty_bok = wynik_bok.pose_landmarks.landmark
-        mp_rysowanie.draw_landmarks(klatka, wynik.pose_landmarks, mp_pozycja.POSE_CONNECTIONS)
-        mp_rysowanie.draw_landmarks(klatka_bok, wynik_bok.pose_landmarks, mp_pozycja.POSE_CONNECTIONS)
-        komunikat, y_dloni, y_bioder, y_kolan, postawa_poprawna = analizuj_martwy_ciag(punkty_przod, punkty_bok)
-
-        aktualny_czas = time.time()
-
-        if komunikat != ostatni_komunikat_wykryty:
-            ostatni_komunikat_wykryty = komunikat
-            czas_rozpoczecia_komunikatu = aktualny_czas
-
-        if aktualny_czas - czas_rozpoczecia_komunikatu >= CZAS_STABILIZACJI:
-            if komunikat == "Poprawna postawa":
-                if ostatni_powiedziany_komunikat != "Poprawna postawa":
-                    mowa.powiedz("Poprawna postawa")
-                    ostatni_powiedziany_komunikat = "Poprawna postawa"
-                    czas_ostatniego_mowienia = aktualny_czas
-            else:
-                if (ostatni_powiedziany_komunikat != komunikat) or (aktualny_czas - czas_ostatniego_mowienia >= CZAS_COOLDOWN):
-                    mowa.powiedz(komunikat)
-                    ostatni_powiedziany_komunikat = komunikat
-                    czas_ostatniego_mowienia = aktualny_czas
-
-        if faza_ruchu == "GORA":
-            if y_dloni > y_kolan:
-                faza_ruchu = "DOL"
-                brak_bledu_cwiczenia = True
-        elif faza_ruchu == "DOL":
-            if not postawa_poprawna:
-                brak_bledu_cwiczenia = False
-            if y_dloni < y_bioder:
-                faza_ruchu = "GORA"
-                if brak_bledu_cwiczenia:
-                    licznik_powtorzen += 1
-
-    cv2.putText(klatka, f"Wskazowka: {komunikat}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-    cv2.putText(klatka, f"Faza: {faza_ruchu}", (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-    cv2.putText(klatka, f"Powtorzenia: {licznik_powtorzen}", (20, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-    cv2.putText(klatka, f"Pozostalo: {cel_powtorzen - licznik_powtorzen}", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1,(0, 0, 255), 2)
-
-    if licznik_powtorzen >= cel_powtorzen:
-        rozmiar_tekstu = cv2.getTextSize("UDALO SIE!", cv2.FONT_HERSHEY_SIMPLEX, 3, 6)[0]
-        cv2.putText(klatka, "UDALO SIE!",((klatka.shape[1] - rozmiar_tekstu[0]) // 2, (klatka.shape[0] + rozmiar_tekstu[1]) // 2),cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 6)
-        cv2.imshow("Asystent Martwego Ciagu", klatka)
-        cv2.imshow("Widok Boczny", klatka_bok)
-        cv2.waitKey(3000)
-        break
-
-    cv2.imshow("Asystent Martwego Ciagu", klatka)
-    cv2.imshow("Widok Boczny", klatka_bok)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-film_przod.release()
-film_bok.release()
-cv2.destroyAllWindows()
-mowa.zamknij()
-sluch.zamknij()
+if __name__ == '__main__':
+    print("Serwer wideo z analiza ruchu uruchomiony! Oczekuje na polaczenie z Javy na porcie 5001...")
+    app.run(debug=False, port=5001, use_reloader=False)
