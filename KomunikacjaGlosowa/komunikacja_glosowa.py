@@ -74,6 +74,10 @@ class SluchTrenera:
         self.koniec_inicjalizacji = False
         self.pauza = False
         self.zadanie_resetu = False
+        self.zadanie_przelaczenia = False
+        self.zadanie_dodania_powtorzenia = False
+        self.zadanie_odjecia_powtorzenia = False
+        self.zadanie_rozpoczecia_treningu = False
 
         katalog_obecny = os.path.dirname(os.path.abspath(__file__))
         sciezka_vosk = os.path.join(katalog_obecny, "vosk-model-pl")
@@ -118,23 +122,59 @@ class SluchTrenera:
 
     def _obsluz_rozpoznany_tekst(self, tekst):
         print(f"Trener usłyszał: {tekst}")
-        slowa_kluczowe_koniec = ["koniec", "wyłącz", "wylacz", "stop"]
         slowa_kluczowe_pauza = ["pauza", "przerwa"]
         slowa_kluczowe_reset = ["reset", "od nowa"]
+        slowa_kluczowe_przelacz = ["przełącz kamerę", "przelacz kamere"]
+        slowa_kluczowe_dodaj = ["dodaj powtórzenie", "dodaj powtorzenie"]
+        slowa_kluczowe_odejmij = ["odejmij powtórzenie", "odejmij powtorzenie"]
+        slowa_kluczowe_rozpocznij = ["rozpocznij trening"]
 
-        if any(slowo in tekst for slowo in slowa_kluczowe_koniec):
-            print("Wykryto komendę zamknięcia. Zamykam zasoby audio...")
-            self.zamknij()
+        if any(slowo in tekst for slowo in slowa_kluczowe_dodaj):
+            self.zadanie_dodania_powtorzenia = True
+            print("Wykryto komendę dodania powtórzenia.")
+        elif any(slowo in tekst for slowo in slowa_kluczowe_odejmij):
+            self.zadanie_odjecia_powtorzenia = True
+            print("Wykryto komendę odjęcia powtórzenia.")
         elif any(slowo in tekst for slowo in slowa_kluczowe_pauza):
             self.pauza = not self.pauza
             print(f"Zmieniono stan pauzy: {self.pauza}")
         elif any(slowo in tekst for slowo in slowa_kluczowe_reset):
             self.zadanie_resetu = True
             print("Wykryto komendę resetu.")
+        elif any(slowo in tekst for slowo in slowa_kluczowe_przelacz):
+            self.zadanie_przelaczenia = True
+            print("Wykryto komendę przełączenia kamery.")
+        elif any(slowo in tekst for slowo in slowa_kluczowe_rozpocznij):
+            self.zadanie_rozpoczecia_treningu = True
+            print("Wykryto komendę rozpoczęcia treningu.")
 
     def sprawdz_i_wyczysc_reset(self):
         if self.zadanie_resetu:
             self.zadanie_resetu = False
+            return True
+        return False
+
+    def sprawdz_i_wyczysc_przelaczenie(self):
+        if self.zadanie_przelaczenia:
+            self.zadanie_przelaczenia = False
+            return True
+        return False
+
+    def sprawdz_i_wyczysc_dodanie_powtorzenia(self):
+        if self.zadanie_dodania_powtorzenia:
+            self.zadanie_dodania_powtorzenia = False
+            return True
+        return False
+
+    def sprawdz_i_wyczysc_odjecie_powtorzenia(self):
+        if self.zadanie_odjecia_powtorzenia:
+            self.zadanie_odjecia_powtorzenia = False
+            return True
+        return False
+
+    def sprawdz_i_wyczysc_rozpoczecie_treningu(self):
+        if self.zadanie_rozpoczecia_treningu:
+            self.zadanie_rozpoczecia_treningu = False
             return True
         return False
 

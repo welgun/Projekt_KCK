@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 public class ApiService {
 
     private static final String BASE_URL = "http://localhost:5000";
+    private static final String TRACKING_URL = "http://localhost:5001";
     private static final HttpClient client = HttpClient.newHttpClient();
     private static final Gson gson = new Gson();
 
@@ -98,6 +99,53 @@ public class ApiService {
                 })
                 .exceptionally(e -> {
                     onError.accept("Brak połączenia z serwerem bazy danych.");
+                    return null;
+                });
+    }
+
+    public static void startTraining(Runnable onSuccess, Consumer<String> onError) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(TRACKING_URL + "/api/start_training"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() == 200) {
+                        onSuccess.run();
+                    } else {
+                        onError.accept("Błąd podczas uruchamiania treningu.");
+                    }
+                })
+                .exceptionally(e -> {
+                    onError.accept("Brak połączenia z serwerem wideo.");
+                    return null;
+                });
+    }
+
+    public static void checkTrainingStatus(Consumer<Boolean> onStatusReceived) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(TRACKING_URL + "/api/training_status"))
+                .GET()
+                .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() == 200) {
+                        try {
+                            JsonObject json = gson.fromJson(response.body(), JsonObject.class);
+                            boolean isRunning = json.get("trening_rozpoczety").getAsBoolean();
+                            onStatusReceived.accept(isRunning);
+                        } catch (Exception e) {
+                            onStatusReceived.accept(false);
+                        }
+                    } else {
+                        onStatusReceived.accept(false);
+                    }
+                })
+                .exceptionally(e -> {
+                    onStatusReceived.accept(false);
                     return null;
                 });
     }

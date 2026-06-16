@@ -6,13 +6,14 @@ import javafx.animation.ParallelTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
+import javafx.scene.control.ComboBox;
+import javafx.scene.image.ImageView;
+import javafx.animation.Timeline;
+import javafx.scene.image.Image;
 
 public class MainInterfaceController {
 
@@ -40,6 +41,13 @@ public class MainInterfaceController {
     @FXML private PasswordField newPasswdField;
     @FXML private Button changePwButton;
     @FXML private Label changePwErrorLabel;
+
+    @FXML private ImageView cameraView;
+    @FXML private ComboBox<String> cameraSelector;
+    @FXML private Button startCamButton;
+
+    private Timeline videoLoop;
+    private String currentView = "przod";
 
     private boolean isMenuOpen = false;
 
@@ -98,6 +106,21 @@ public class MainInterfaceController {
             changePwErrorLabel.setText("");
             validateChangePasswordForm();
         });
+        cameraSelector.getItems().addAll(
+                "Kamera Frontowa (Widok z przodu)",
+                "Kamera Boczna (Profil)"
+        );
+        cameraSelector.getSelectionModel().selectFirst();
+        cameraSelector.setOnAction(e -> {
+            if (cameraSelector.getSelectionModel().getSelectedIndex() == 0) {
+                currentView = "przod";
+            } else {
+                currentView = "bok";
+            }
+        });
+
+        startCameraStream();
+        startStatusPolling();
     }
 
     private void validateLoginForm() {
@@ -307,5 +330,84 @@ public class MainInterfaceController {
         }
         ParallelTransition pt = new ParallelTransition(menuTran, buttonTran);
         pt.play();
+    }
+
+    @FXML
+    private void startTrainingStream() {
+        System.out.println("Przycisk ROZPOCZNIJ TRENING został wciśnięty!");
+
+        startCamButton.setDisable(true);
+        startCamButton.setVisible(false);
+
+        ApiService.startTraining(
+                () -> {
+                    System.out.println("Trening rozpoczęty pomyślnie.");
+                },
+                (error) -> {
+                    System.err.println("Nie udało się rozpocząć treningu: " + error);
+                    Platform.runLater(() -> {
+                        startCamButton.setDisable(false);
+                        startCamButton.setVisible(true);
+                    });
+                }
+        );
+    }
+
+    private Timeline statusPollingTimeline;
+
+    private void startStatusPolling() {
+        if (statusPollingTimeline != null) {
+            statusPollingTimeline.stop();
+        }
+
+        statusPollingTimeline = new Timeline(new javafx.animation.KeyFrame(Duration.seconds(1), event -> {
+            ApiService.checkTrainingStatus(isRunning -> {
+                Platform.runLater(() -> {
+                    if (isRunning) {
+                        if (startCamButton.isVisible()) {
+                            startCamButton.setDisable(true);
+                            startCamButton.setVisible(false);
+                            System.out.println("Trening rozpoczął się (wykryto w tle) - przycisk schowany.");
+                        }
+                    } else {
+                        if (!startCamButton.isVisible()) {
+                            startCamButton.setDisable(false);
+                            startCamButton.setVisible(true);
+                            System.out.println("Trening został zakończony - przycisk przywrócony.");
+                        }
+                    }
+                });
+            });
+        }));
+        statusPollingTimeline.setCycleCount(Timeline.INDEFINITE);
+        statusPollingTimeline.play();
+    }
+
+    private volatile boolean isCameraRunning = false;
+
+    private void startCameraStream() {
+        isCameraRunning = true;
+
+        Thread streamThread = new Thread(() -> {
+            while (isCameraRunning) {
+                try {
+                    String url = "http://localhost:5001/api/video_feed?widok=" + currentView + "&time=" + System.currentTimeMillis();
+
+                    Image frame = new Image(url, false);
+
+                    if (!frame.isError()) {
+                        Platform.runLater(() -> cameraView.setImage(frame));
+                    }
+
+                    Thread.sleep(33);
+
+                } catch (Exception e) {
+                    try { Thread.sleep(500); } catch (InterruptedException ex) {}
+                }
+            }
+        });
+
+        streamThread.setDaemon(true);
+        streamThread.start();
     }
 }

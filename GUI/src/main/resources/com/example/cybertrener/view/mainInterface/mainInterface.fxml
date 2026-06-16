@@ -11,14 +11,30 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.control.ComboBox?>
 
 <StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1280.0" stylesheets="@mainInterface.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.cybertrener.controllers.MainInterfaceController">
    <children>
-      <VBox fx:id="cameraContainer" prefHeight="720.0" prefWidth="1280.0">
+      <StackPane fx:id="cameraContainer" prefHeight="720.0" prefWidth="1280.0">
          <StackPane.margin>
             <Insets />
          </StackPane.margin>
-      </VBox>
+         <children>
+            <ImageView fx:id="cameraView" fitHeight="720.0" fitWidth="1280.0" preserveRatio="true" />
+
+            <ComboBox fx:id="cameraSelector" prefWidth="250.0" styleClass="cyber-combo" StackPane.alignment="TOP_CENTER">
+               <StackPane.margin>
+                  <Insets top="30.0" />
+               </StackPane.margin>
+            </ComboBox>
+
+            <Button fx:id="startCamButton" mnemonicParsing="false" onAction="#startTrainingStream" styleClass="start-button" text="ROZPOCZNIJ TRENING" StackPane.alignment="BOTTOM_CENTER">
+               <StackPane.margin>
+                  <Insets bottom="50.0" />
+               </StackPane.margin>
+            </Button>
+         </children>
+      </StackPane>
 
       <VBox fx:id="sideMenu" maxHeight="1.7976931348623157E308" maxWidth="300.0" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="300.0" StackPane.alignment="TOP_LEFT">
          <children>
