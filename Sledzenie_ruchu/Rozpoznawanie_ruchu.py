@@ -12,9 +12,16 @@ sys.path.append(folder_komunikacji)
 
 from komunikacja_glosowa import MowaTrenera, SluchTrenera, czy_komunikacja_zostala_zainicjalizowana
 
+import time
+
+CZAS_STABILIZACJI = 1.0
+CZAS_COOLDOWN = 4.0
+
 mp_pozycja = mp.solutions.pose
 mp_rysowanie = mp.solutions.drawing_utils
-film = cv2.VideoCapture(0)
+film_przod = cv2.VideoCapture(0)
+film_bok = cv2.VideoCapture(1)
+
 cv2.namedWindow("Asystent Martwego Ciagu", cv2.WINDOW_NORMAL)
 cv2.resizeWindow("Asystent Martwego Ciagu", 1280, 720)
 cv2.namedWindow("Widok Boczny", cv2.WINDOW_NORMAL)
@@ -27,6 +34,10 @@ brak_bledu_cwiczenia = True
 cel_powtorzen = 5
 komunikat = ""
 
+ostatni_komunikat_wykryty = ""
+czas_rozpoczecia_komunikatu = 0.0
+ostatni_powiedziany_komunikat = ""
+czas_ostatniego_mowienia = 0.0
 
 def analizuj_martwy_ciag(punkty, punkty_bok):
     L_ramie = punkty[mp_pozycja.PoseLandmark.LEFT_SHOULDER]
@@ -95,16 +106,27 @@ if czy_komunikacja_zostala_zainicjalizowana(mowa, sluch):
     print("Moduły głosowe gotowe.")
 mowa.powiedz("Witaj w asystencie martwego ciągu. Przygotuj się do ćwiczenia.")
 
-while film.isOpened():
+if not film_przod.isOpened() or not film_bok.isOpened():
+    print("Nie udalo sie otworzyc obu kamer.")
+    mowa.powiedz("Nie wykryto dwóch kamer, kończę pracę.")
+    time.sleep(4)
+    if film_przod.isOpened(): film_przod.release()
+    if film_bok.isOpened(): film_bok.release()
+    mowa.zamknij()
+    sluch.zamknij()
+    sys.exit()
+
+while film_przod.isOpened() and film_bok.isOpened():
     if not sluch.czy_dziala():
         mowa.powiedz("Zamykam program.")
-        import time
 
         time.sleep(2)
         break
-    sukces, nowa_klatka = film.read()
-    if not sukces:
-        print("Nie udało się pobrać obrazu z kamery")
+    sukces_przod, nowa_klatka_przod = film_przod.read()
+    sukces_bok, nowa_klatka_bok = film_bok.read()
+
+    if not sukces_przod or not sukces_bok:
+        print("Nie udało się pobrać obrazu z kamer")
         break
 
     if sluch.czy_jest_pauza():
@@ -123,9 +145,9 @@ while film.isOpened():
         licznik_powtorzen = 0
         mowa.powiedz("Zeruję licznik powtórzeń.")
 
-    klatka = cv2.flip(nowa_klatka, 1)
+    klatka = cv2.flip(nowa_klatka_przod, 1)
 
-    klatka_bok = klatka.copy()
+    klatka_bok = nowa_klatka_bok
     klatka_rgb = cv2.cvtColor(klatka, cv2.COLOR_BGR2RGB)
     klatka_bok_rgb = cv2.cvtColor(klatka_bok, cv2.COLOR_BGR2RGB)
     wynik = pozycja.process(klatka_rgb)
@@ -137,6 +159,24 @@ while film.isOpened():
         mp_rysowanie.draw_landmarks(klatka, wynik.pose_landmarks, mp_pozycja.POSE_CONNECTIONS)
         mp_rysowanie.draw_landmarks(klatka_bok, wynik_bok.pose_landmarks, mp_pozycja.POSE_CONNECTIONS)
         komunikat, y_dloni, y_bioder, y_kolan, postawa_poprawna = analizuj_martwy_ciag(punkty_przod, punkty_bok)
+
+        aktualny_czas = time.time()
+
+        if komunikat != ostatni_komunikat_wykryty:
+            ostatni_komunikat_wykryty = komunikat
+            czas_rozpoczecia_komunikatu = aktualny_czas
+
+        if aktualny_czas - czas_rozpoczecia_komunikatu >= CZAS_STABILIZACJI:
+            if komunikat == "Poprawna postawa":
+                if ostatni_powiedziany_komunikat != "Poprawna postawa":
+                    mowa.powiedz("Poprawna postawa")
+                    ostatni_powiedziany_komunikat = "Poprawna postawa"
+                    czas_ostatniego_mowienia = aktualny_czas
+            else:
+                if (ostatni_powiedziany_komunikat != komunikat) or (aktualny_czas - czas_ostatniego_mowienia >= CZAS_COOLDOWN):
+                    mowa.powiedz(komunikat)
+                    ostatni_powiedziany_komunikat = komunikat
+                    czas_ostatniego_mowienia = aktualny_czas
 
         if faza_ruchu == "GORA":
             if y_dloni > y_kolan:
@@ -168,7 +208,8 @@ while film.isOpened():
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-film.release()
+film_przod.release()
+film_bok.release()
 cv2.destroyAllWindows()
 mowa.zamknij()
 sluch.zamknij()
