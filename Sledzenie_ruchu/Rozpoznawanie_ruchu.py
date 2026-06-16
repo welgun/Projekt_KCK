@@ -7,6 +7,7 @@ import os
 import threading
 import numpy as np
 from flask import Flask, Response, request
+import signal
 
 aktualny_folder = os.path.dirname(os.path.abspath(__file__))
 folder_glowny = os.path.dirname(aktualny_folder)
@@ -248,6 +249,11 @@ def video_feed():
 
     return Response(jpeg.tobytes(), mimetype='image/jpeg')
 
+def obsluga_zakonczenia(sig, frame):
+    print("\nZamykanie programu (Ctrl+C)...")
+    os._exit(0)
+
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, obsluga_zakonczenia)
     print("Serwer wideo z analiza ruchu uruchomiony! Oczekuje na polaczenie z Javy na porcie 5001...")
     app.run(debug=False, port=5001, use_reloader=False)
