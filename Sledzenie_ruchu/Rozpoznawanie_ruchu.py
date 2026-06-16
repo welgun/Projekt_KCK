@@ -31,6 +31,7 @@ def generuj_obraz_brak_kamery():
 
 CZAS_STABILIZACJI = 1.0
 CZAS_COOLDOWN = 4.0
+TOLERANCJA_ZLEJ_POSTAWY_SEKUNDY = 1.0
 
 def analizuj_martwy_ciag(punkty, punkty_bok, mp_pozycja):
     L_ramie = punkty[mp_pozycja.PoseLandmark.LEFT_SHOULDER]
@@ -114,6 +115,8 @@ def watek_kamery():
     czas_rozpoczecia_komunikatu = 0.0
     ostatni_powiedziany_komunikat = ""
     czas_ostatniego_mowienia = 0.0
+
+    czas_rozpoczecia_bledu = 0.0
 
     mowa = MowaTrenera()
     sluch = SluchTrenera()
@@ -211,13 +214,23 @@ def watek_kamery():
                 if y_dloni > y_kolan:
                     faza_ruchu = "DOL"
                     brak_bledu_cwiczenia = True
+                    czas_rozpoczecia_bledu = 0.0
             elif faza_ruchu == "DOL":
                 if not postawa_poprawna:
-                    brak_bledu_cwiczenia = False
+                    if czas_rozpoczecia_bledu == 0.0:
+                        czas_rozpoczecia_bledu = aktualny_czas
+                    elif aktualny_czas - czas_rozpoczecia_bledu >= TOLERANCJA_ZLEJ_POSTAWY_SEKUNDY:
+                        brak_bledu_cwiczenia = False
+                    else:
+                        czas_rozpoczecia_bledu = 0.0
+
                 if y_dloni < y_bioder:
                     faza_ruchu = "GORA"
                     if brak_bledu_cwiczenia:
                         licznik_powtorzen += 1
+                        mowa.powiedz("Powtórzenie zaliczono")
+                    else:
+                        mowa.powiedz("Powtórzenia nie zaliczono")
 
         cv2.putText(klatka, f"Wskazowka: {komunikat}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
         cv2.putText(klatka, f"Faza: {faza_ruchu}", (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
