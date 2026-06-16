@@ -119,8 +119,8 @@ public class MainInterfaceController {
             }
         });
 
-        // 2. Automatyczne uruchomienie odtwarzacza kamery!
         startCameraStream();
+        startStatusPolling();
     }
 
     private void validateLoginForm() {
@@ -335,7 +335,52 @@ public class MainInterfaceController {
     @FXML
     private void startTrainingStream() {
         System.out.println("Przycisk ROZPOCZNIJ TRENING został wciśnięty!");
-        // Tutaj w przyszłości dodasz logikę zapisu statystyk lub uruchomienia algorytmu oceny!
+
+        startCamButton.setDisable(true);
+        startCamButton.setVisible(false);
+
+        ApiService.startTraining(
+                () -> {
+                    System.out.println("Trening rozpoczęty pomyślnie.");
+                },
+                (error) -> {
+                    System.err.println("Nie udało się rozpocząć treningu: " + error);
+                    Platform.runLater(() -> {
+                        startCamButton.setDisable(false);
+                        startCamButton.setVisible(true);
+                    });
+                }
+        );
+    }
+
+    private Timeline statusPollingTimeline;
+
+    private void startStatusPolling() {
+        if (statusPollingTimeline != null) {
+            statusPollingTimeline.stop();
+        }
+
+        statusPollingTimeline = new Timeline(new javafx.animation.KeyFrame(Duration.seconds(1), event -> {
+            ApiService.checkTrainingStatus(isRunning -> {
+                Platform.runLater(() -> {
+                    if (isRunning) {
+                        if (startCamButton.isVisible()) {
+                            startCamButton.setDisable(true);
+                            startCamButton.setVisible(false);
+                            System.out.println("Trening rozpoczął się (wykryto w tle) - przycisk schowany.");
+                        }
+                    } else {
+                        if (!startCamButton.isVisible()) {
+                            startCamButton.setDisable(false);
+                            startCamButton.setVisible(true);
+                            System.out.println("Trening został zakończony - przycisk przywrócony.");
+                        }
+                    }
+                });
+            });
+        }));
+        statusPollingTimeline.setCycleCount(Timeline.INDEFINITE);
+        statusPollingTimeline.play();
     }
 
     private volatile boolean isCameraRunning = false;
@@ -346,29 +391,23 @@ public class MainInterfaceController {
         Thread streamThread = new Thread(() -> {
             while (isCameraRunning) {
                 try {
-                    // Generujemy URL z unikalnym czasem, żeby uniknąć cache'owania
                     String url = "http://localhost:5001/api/video_feed?widok=" + currentView + "&time=" + System.currentTimeMillis();
 
-                    // UWAGA: false oznacza, że pobieramy obraz SYNCHRONICZNIE.
-                    // Ponieważ jesteśmy w osobnym wątku (nie w głównym GUI), interfejs się nie zatnie!
                     Image frame = new Image(url, false);
 
-                    // Jeśli obraz pobrał się bez błędów, wrzucamy go na ekran
                     if (!frame.isError()) {
                         Platform.runLater(() -> cameraView.setImage(frame));
                     }
 
-                    // Odczekujemy chwilę przed pobraniem kolejnej klatki (33ms = ok. 30 FPS)
                     Thread.sleep(33);
 
                 } catch (Exception e) {
-                    // W razie błędu serwera czekamy pół sekundy, żeby nie zaspamować konsoli
                     try { Thread.sleep(500); } catch (InterruptedException ex) {}
                 }
             }
         });
 
-        streamThread.setDaemon(true); // Ważne: wątek zostanie zabity, gdy wyłączysz aplikację krzyżykiem
+        streamThread.setDaemon(true);
         streamThread.start();
     }
 }

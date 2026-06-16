@@ -195,6 +195,13 @@ def watek_kamery():
             else:
                 mowa.powiedz("Cel powtórzeń nie może być mniejszy niż jeden")
 
+        if sluch.sprawdz_i_wyczysc_rozpoczecie_treningu():
+            if not trening_rozpoczety:
+                trening_rozpoczety = True
+                print("Trening rozpoczęty komendą głosową.")
+            else:
+                mowa.powiedz("Trening już trwa")
+
         klatka = cv2.flip(nowa_klatka_przod, 1)
         klatka_bok = nowa_klatka_bok
 
