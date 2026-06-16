@@ -25,9 +25,7 @@ trening_rozpoczety = False
 def generuj_obraz_brak_kamery():
     puste_tlo = np.zeros((720, 1280, 3), dtype=np.uint8)
     rozmiar_tekstu = cv2.getTextSize("BRAK KAMERY / NIEPODLACZONA", cv2.FONT_HERSHEY_SIMPLEX, 2, 5)[0]
-    cv2.putText(puste_tlo, "BRAK KAMERY / NIEPODLACZONA",
-                ((1280 - rozmiar_tekstu[0]) // 2, (720 + rozmiar_tekstu[1]) // 2),
-                cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 5)
+    cv2.putText(puste_tlo, "BRAK KAMERY / NIEPODLACZONA",((1280 - rozmiar_tekstu[0]) // 2, (720 + rozmiar_tekstu[1]) // 2),cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 5)
     return puste_tlo
 
 CZAS_STABILIZACJI = 1.0
@@ -71,19 +69,19 @@ def analizuj_martwy_ciag(punkty, punkty_bok, mp_pozycja):
         komunikat = "Wyprostuj plecy"
         poprawna_postawa = False
     elif szerokosc_stop > szerokosc_ramion * 1.2:
-        komunikat = "Zwez stopy"
+        komunikat = "Zwęż stopy"
         poprawna_postawa = False
     elif szerokosc_stop < szerokosc_ramion * 0.8:
         komunikat = "Rozszerz stopy"
         poprawna_postawa = False
     elif szerokosc_dloni < szerokosc_stop * 1.05:
-        komunikat = "Zlap sztange szerzej"
+        komunikat = "Złap sztange szerzej"
         poprawna_postawa = False
     elif szerokosc_dloni > szerokosc_ramion * 1.4:
-        komunikat = "Zlap sztange weziej"
+        komunikat = "Złap sztange węziej"
         poprawna_postawa = False
     elif przesuniecie_L_kolana > tolerancja_kolan or przesuniecie_P_kolana > tolerancja_kolan:
-        komunikat = "Pilnuj kolan musza byc nad stopami"
+        komunikat = "Pilnuj kolan muszą być nad stopami"
         poprawna_postawa = False
     else:
         komunikat = "Poprawna postawa"
@@ -268,10 +266,10 @@ def watek_kamery():
                         else:
                             mowa.powiedz("Powtórzenia nie zaliczono")
 
-        cv2.putText(klatka, f"Wskazowka: {komunikat}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-        cv2.putText(klatka, f"Faza: {faza_ruchu}", (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-        cv2.putText(klatka, f"Powtorzenia: {licznik_powtorzen}", (20, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-        cv2.putText(klatka, f"Pozostalo: {cel_powtorzen - licznik_powtorzen}", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1,(0, 0, 255), 2)
+        cv2.putText(klatka, f"Wskazowka: {komunikat}", (20, 500), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+        cv2.putText(klatka, f"Faza: {faza_ruchu}", (20, 550), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+        cv2.putText(klatka, f"Powtorzenia: {licznik_powtorzen}", (20, 600), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.putText(klatka, f"Pozostalo: {cel_powtorzen - licznik_powtorzen}", (20, 650), cv2.FONT_HERSHEY_SIMPLEX, 1,(0, 0, 255), 2)
 
         if licznik_powtorzen >= cel_powtorzen:
             rozmiar_tekstu = cv2.getTextSize("UDALO SIE!", cv2.FONT_HERSHEY_SIMPLEX, 3, 6)[0]
