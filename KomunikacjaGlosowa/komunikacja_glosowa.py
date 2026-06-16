@@ -75,6 +75,8 @@ class SluchTrenera:
         self.pauza = False
         self.zadanie_resetu = False
         self.zadanie_przelaczenia = False
+        self.zadanie_dodania_powtorzenia = False
+        self.zadanie_odjecia_powtorzenia = False
 
         katalog_obecny = os.path.dirname(os.path.abspath(__file__))
         sciezka_vosk = os.path.join(katalog_obecny, "vosk-model-pl")
@@ -122,8 +124,16 @@ class SluchTrenera:
         slowa_kluczowe_pauza = ["pauza", "przerwa"]
         slowa_kluczowe_reset = ["reset", "od nowa"]
         slowa_kluczowe_przelacz = ["przełącz kamerę", "przelacz kamere"]
+        slowa_kluczowe_dodaj = ["dodaj powtórzenie", "dodaj powtorzenie"]
+        slowa_kluczowe_odejmij = ["odejmij powtórzenie", "odejmij powtorzenie"]
 
-        if any(slowo in tekst for slowo in slowa_kluczowe_pauza):
+        if any(slowo in tekst for slowo in slowa_kluczowe_dodaj):
+            self.zadanie_dodania_powtorzenia = True
+            print("Wykryto komendę dodania powtórzenia.")
+        elif any(slowo in tekst for slowo in slowa_kluczowe_odejmij):
+            self.zadanie_odjecia_powtorzenia = True
+            print("Wykryto komendę odjęcia powtórzenia.")
+        elif any(slowo in tekst for slowo in slowa_kluczowe_pauza):
             self.pauza = not self.pauza
             print(f"Zmieniono stan pauzy: {self.pauza}")
         elif any(slowo in tekst for slowo in slowa_kluczowe_reset):
@@ -142,6 +152,18 @@ class SluchTrenera:
     def sprawdz_i_wyczysc_przelaczenie(self):
         if self.zadanie_przelaczenia:
             self.zadanie_przelaczenia = False
+            return True
+        return False
+
+    def sprawdz_i_wyczysc_dodanie_powtorzenia(self):
+        if self.zadanie_dodania_powtorzenia:
+            self.zadanie_dodania_powtorzenia = False
+            return True
+        return False
+
+    def sprawdz_i_wyczysc_odjecie_powtorzenia(self):
+        if self.zadanie_odjecia_powtorzenia:
+            self.zadanie_odjecia_powtorzenia = False
             return True
         return False
 

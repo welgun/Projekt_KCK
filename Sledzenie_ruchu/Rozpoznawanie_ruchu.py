@@ -1,5 +1,4 @@
 import cv2
-import mediapipe as mp
 import math
 import time
 import sys
@@ -180,6 +179,17 @@ def watek_kamery():
         if sluch.sprawdz_i_wyczysc_przelaczenie():
             zamien_kamery = not zamien_kamery
             mowa.powiedz("Zmieniam widok")
+
+        if sluch.sprawdz_i_wyczysc_dodanie_powtorzenia():
+            cel_powtorzen += 1
+            mowa.powiedz(f"Zwiększono cel powtórzeń do {cel_powtorzen}")
+
+        if sluch.sprawdz_i_wyczysc_odjecie_powtorzenia():
+            if cel_powtorzen > 1:
+                cel_powtorzen -= 1
+                mowa.powiedz(f"Zmniejszono cel powtórzeń do {cel_powtorzen}")
+            else:
+                mowa.powiedz("Cel powtórzeń nie może być mniejszy niż jeden")
 
         klatka = cv2.flip(nowa_klatka_przod, 1)
         klatka_bok = nowa_klatka_bok
