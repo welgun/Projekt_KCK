@@ -20,6 +20,7 @@ app = Flask(__name__)
 
 aktualna_klatka_przod = None
 aktualna_klatka_bok = None
+zamien_kamery = False
 
 def generuj_obraz_brak_kamery():
     puste_tlo = np.zeros((720, 1280, 3), dtype=np.uint8)
@@ -94,7 +95,7 @@ def analizuj_martwy_ciag(punkty, punkty_bok, mp_pozycja):
     return komunikat, wysokosc_dloni, wysokosc_bioder, wysokosc_kolan, poprawna_postawa
 
 def watek_kamery():
-    global aktualna_klatka_przod, aktualna_klatka_bok
+    global aktualna_klatka_przod, aktualna_klatka_bok, zamien_kamery
 
     from mediapipe.python.solutions import pose as mp_pose
     from mediapipe.python.solutions import drawing_utils as mp_drawing
@@ -175,6 +176,10 @@ def watek_kamery():
         if sluch.sprawdz_i_wyczysc_reset():
             licznik_powtorzen = 0
             mowa.powiedz("Zeruję licznik powtórzeń.")
+
+        if sluch.sprawdz_i_wyczysc_przelaczenie():
+            zamien_kamery = not zamien_kamery
+            mowa.powiedz("Zmieniam widok")
 
         klatka = cv2.flip(nowa_klatka_przod, 1)
         klatka_bok = nowa_klatka_bok
@@ -261,6 +266,13 @@ threading.Thread(target=watek_kamery, daemon=True).start()
 @app.route('/api/video_feed')
 def video_feed():
     widok = request.args.get('widok', 'przod')
+
+    global zamien_kamery
+    if zamien_kamery:
+        if widok == "przod":
+            widok = "bok"
+        else:
+            widok = "przod"
 
     klatka_do_wyslania = aktualna_klatka_przod if widok == "przod" else aktualna_klatka_bok
 

@@ -74,6 +74,7 @@ class SluchTrenera:
         self.koniec_inicjalizacji = False
         self.pauza = False
         self.zadanie_resetu = False
+        self.zadanie_przelaczenia = False
 
         katalog_obecny = os.path.dirname(os.path.abspath(__file__))
         sciezka_vosk = os.path.join(katalog_obecny, "vosk-model-pl")
@@ -121,6 +122,7 @@ class SluchTrenera:
         slowa_kluczowe_koniec = ["koniec", "wyłącz", "wylacz", "stop"]
         slowa_kluczowe_pauza = ["pauza", "przerwa"]
         slowa_kluczowe_reset = ["reset", "od nowa"]
+        slowa_kluczowe_przelacz = ["przełącz kamerę", "przelacz kamere"]
 
         if any(slowo in tekst for slowo in slowa_kluczowe_koniec):
             print("Wykryto komendę zamknięcia. Zamykam zasoby audio...")
@@ -131,10 +133,19 @@ class SluchTrenera:
         elif any(slowo in tekst for slowo in slowa_kluczowe_reset):
             self.zadanie_resetu = True
             print("Wykryto komendę resetu.")
+        elif any(slowo in tekst for slowo in slowa_kluczowe_przelacz):
+            self.zadanie_przelaczenia = True
+            print("Wykryto komendę przełączenia kamery.")
 
     def sprawdz_i_wyczysc_reset(self):
         if self.zadanie_resetu:
             self.zadanie_resetu = False
+            return True
+        return False
+
+    def sprawdz_i_wyczysc_przelaczenie(self):
+        if self.zadanie_przelaczenia:
+            self.zadanie_przelaczenia = False
             return True
         return False
 
