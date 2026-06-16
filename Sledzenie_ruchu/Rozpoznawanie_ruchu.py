@@ -20,6 +20,7 @@ app = Flask(__name__)
 aktualna_klatka_przod = None
 aktualna_klatka_bok = None
 zamien_kamery = False
+trening_rozpoczety = False
 
 def generuj_obraz_brak_kamery():
     puste_tlo = np.zeros((720, 1280, 3), dtype=np.uint8)
@@ -118,11 +119,14 @@ def watek_kamery():
 
     czas_rozpoczecia_bledu = 0.0
 
+    global trening_rozpoczety
+
     mowa = MowaTrenera()
     sluch = SluchTrenera()
     if czy_komunikacja_zostala_zainicjalizowana(mowa, sluch):
         print("Moduły głosowe gotowe.")
-    mowa.powiedz("Witaj w asystencie martwego ciągu. Przygotuj się do ćwiczenia.")
+
+    witaj_powiedziane = False
 
     film_przod = cv2.VideoCapture(0)
     film_przod.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
@@ -200,52 +204,62 @@ def watek_kamery():
         wynik = pozycja.process(klatka_rgb)
         wynik_bok = pozycja_bok.process(klatka_bok_rgb)
 
-        if wynik.pose_landmarks and wynik_bok.pose_landmarks:
-            punkty_przod = wynik.pose_landmarks.landmark
-            punkty_bok = wynik_bok.pose_landmarks.landmark
-            mp_rysowanie.draw_landmarks(klatka, wynik.pose_landmarks, mp_pozycja.POSE_CONNECTIONS)
-            mp_rysowanie.draw_landmarks(klatka_bok, wynik_bok.pose_landmarks, mp_pozycja.POSE_CONNECTIONS)
-            komunikat, y_dloni, y_bioder, y_kolan, postawa_poprawna = analizuj_martwy_ciag(punkty_przod, punkty_bok, mp_pozycja)
+        if trening_rozpoczety:
+            if not witaj_powiedziane:
+                mowa.powiedz("Witaj w asystencie martwego ciągu. Przygotuj się do ćwiczenia.")
+                witaj_powiedziane = True
 
-            aktualny_czas = time.time()
+            wynik = pozycja.process(klatka_rgb)
+            wynik_bok = pozycja_bok.process(klatka_bok_rgb)
 
-            if komunikat != ostatni_komunikat_wykryty:
-                ostatni_komunikat_wykryty = komunikat
-                czas_rozpoczecia_komunikatu = aktualny_czas
+            if wynik.pose_landmarks and wynik_bok.pose_landmarks:
+                punkty_przod = wynik.pose_landmarks.landmark
+                punkty_bok = wynik_bok.pose_landmarks.landmark
+                mp_rysowanie.draw_landmarks(klatka, wynik.pose_landmarks, mp_pozycja.POSE_CONNECTIONS)
+                mp_rysowanie.draw_landmarks(klatka_bok, wynik_bok.pose_landmarks, mp_pozycja.POSE_CONNECTIONS)
+                komunikat, y_dloni, y_bioder, y_kolan, postawa_poprawna = analizuj_martwy_ciag(punkty_przod, punkty_bok,
+                                                                                               mp_pozycja)
 
-            if aktualny_czas - czas_rozpoczecia_komunikatu >= CZAS_STABILIZACJI:
-                if komunikat == "Poprawna postawa":
-                    if ostatni_powiedziany_komunikat != "Poprawna postawa":
-                        mowa.powiedz("Poprawna postawa")
-                        ostatni_powiedziany_komunikat = "Poprawna postawa"
-                        czas_ostatniego_mowienia = aktualny_czas
-                else:
-                    if (ostatni_powiedziany_komunikat != komunikat) or (aktualny_czas - czas_ostatniego_mowienia >= CZAS_COOLDOWN):
-                        mowa.powiedz(komunikat)
-                        ostatni_powiedziany_komunikat = komunikat
-                        czas_ostatniego_mowienia = aktualny_czas
+                aktualny_czas = time.time()
 
-            if faza_ruchu == "GORA":
-                if y_dloni > y_kolan:
-                    faza_ruchu = "DOL"
-                    brak_bledu_cwiczenia = True
-                    czas_rozpoczecia_bledu = 0.0
-            elif faza_ruchu == "DOL":
-                if not postawa_poprawna:
-                    if czas_rozpoczecia_bledu == 0.0:
-                        czas_rozpoczecia_bledu = aktualny_czas
-                    elif aktualny_czas - czas_rozpoczecia_bledu >= TOLERANCJA_ZLEJ_POSTAWY_SEKUNDY:
-                        brak_bledu_cwiczenia = False
+                if komunikat != ostatni_komunikat_wykryty:
+                    ostatni_komunikat_wykryty = komunikat
+                    czas_rozpoczecia_komunikatu = aktualny_czas
+
+                if aktualny_czas - czas_rozpoczecia_komunikatu >= CZAS_STABILIZACJI:
+                    if komunikat == "Poprawna postawa":
+                        if ostatni_powiedziany_komunikat != "Poprawna postawa":
+                            mowa.powiedz("Poprawna postawa")
+                            ostatni_powiedziany_komunikat = "Poprawna postawa"
+                            czas_ostatniego_mowienia = aktualny_czas
+                    else:
+                        if (ostatni_powiedziany_komunikat != komunikat) or (
+                                aktualny_czas - czas_ostatniego_mowienia >= CZAS_COOLDOWN):
+                            mowa.powiedz(komunikat)
+                            ostatni_powiedziany_komunikat = komunikat
+                            czas_ostatniego_mowienia = aktualny_czas
+
+                if faza_ruchu == "GORA":
+                    if y_dloni > y_kolan:
+                        faza_ruchu = "DOL"
+                        brak_bledu_cwiczenia = True
+                        czas_rozpoczecia_bledu = 0.0
+                elif faza_ruchu == "DOL":
+                    if not postawa_poprawna:
+                        if czas_rozpoczecia_bledu == 0.0:
+                            czas_rozpoczecia_bledu = aktualny_czas
+                        elif aktualny_czas - czas_rozpoczecia_bledu >= TOLERANCJA_ZLEJ_POSTAWY_SEKUNDY:
+                            brak_bledu_cwiczenia = False
                     else:
                         czas_rozpoczecia_bledu = 0.0
 
-                if y_dloni < y_bioder:
-                    faza_ruchu = "GORA"
-                    if brak_bledu_cwiczenia:
-                        licznik_powtorzen += 1
-                        mowa.powiedz("Powtórzenie zaliczono")
-                    else:
-                        mowa.powiedz("Powtórzenia nie zaliczono")
+                    if y_dloni < y_bioder:
+                        faza_ruchu = "GORA"
+                        if brak_bledu_cwiczenia:
+                            licznik_powtorzen += 1
+                            mowa.powiedz("Powtórzenie zaliczono")
+                        else:
+                            mowa.powiedz("Powtórzenia nie zaliczono")
 
         cv2.putText(klatka, f"Wskazowka: {komunikat}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
         cv2.putText(klatka, f"Faza: {faza_ruchu}", (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
@@ -254,14 +268,18 @@ def watek_kamery():
 
         if licznik_powtorzen >= cel_powtorzen:
             rozmiar_tekstu = cv2.getTextSize("UDALO SIE!", cv2.FONT_HERSHEY_SIMPLEX, 3, 6)[0]
-            cv2.putText(klatka, "UDALO SIE!",((klatka.shape[1] - rozmiar_tekstu[0]) // 2, (klatka.shape[0] + rozmiar_tekstu[1]) // 2),cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 6)
+            cv2.putText(klatka, "UDALO SIE!",((klatka.shape[1] - rozmiar_tekstu[0]) // 2, (klatka.shape[0] + rozmiar_tekstu[1]) // 2), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 6)
 
             aktualna_klatka_przod = klatka
             aktualna_klatka_bok = klatka_bok
 
             time.sleep(3)
             licznik_powtorzen = 0
+            trening_rozpoczety = False
+            witaj_powiedziane = False
             continue
+        else:
+            pass
 
         aktualna_klatka_przod = klatka
         aktualna_klatka_bok = klatka_bok
@@ -272,6 +290,17 @@ def watek_kamery():
     sluch.zamknij()
 
 threading.Thread(target=watek_kamery, daemon=True).start()
+
+@app.route('/api/start_training', methods=['POST'])
+def start_training():
+    global trening_rozpoczety
+    trening_rozpoczety = True
+    return {"status": "success", "message": "Trening rozpoczęty."}
+
+@app.route('/api/training_status', methods=['GET'])
+def training_status():
+    global trening_rozpoczety
+    return {"trening_rozpoczety": trening_rozpoczety}
 
 @app.route('/api/video_feed')
 def video_feed():
