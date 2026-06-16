@@ -266,25 +266,25 @@ def watek_kamery():
                         else:
                             mowa.powiedz("Powtórzenia nie zaliczono")
 
-        cv2.putText(klatka, f"Wskazowka: {komunikat}", (20, 500), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-        cv2.putText(klatka, f"Faza: {faza_ruchu}", (20, 550), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-        cv2.putText(klatka, f"Powtorzenia: {licznik_powtorzen}", (20, 600), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-        cv2.putText(klatka, f"Pozostalo: {cel_powtorzen - licznik_powtorzen}", (20, 650), cv2.FONT_HERSHEY_SIMPLEX, 1,(0, 0, 255), 2)
+            cv2.putText(klatka, f"Wskazowka: {komunikat}", (20, 500), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+            cv2.putText(klatka, f"Faza: {faza_ruchu}", (20, 550), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+            cv2.putText(klatka, f"Powtorzenia: {licznik_powtorzen}", (20, 600), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(klatka, f"Pozostalo: {cel_powtorzen - licznik_powtorzen}", (20, 650), cv2.FONT_HERSHEY_SIMPLEX, 1,(0, 0, 255), 2)
 
-        if licznik_powtorzen >= cel_powtorzen:
-            rozmiar_tekstu = cv2.getTextSize("UDALO SIE!", cv2.FONT_HERSHEY_SIMPLEX, 3, 6)[0]
-            cv2.putText(klatka, "UDALO SIE!",((klatka.shape[1] - rozmiar_tekstu[0]) // 2, (klatka.shape[0] + rozmiar_tekstu[1]) // 2), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 6)
+            if licznik_powtorzen >= cel_powtorzen:
+                rozmiar_tekstu = cv2.getTextSize("UDALO SIE!", cv2.FONT_HERSHEY_SIMPLEX, 3, 6)[0]
+                cv2.putText(klatka, "UDALO SIE!",((klatka.shape[1] - rozmiar_tekstu[0]) // 2, (klatka.shape[0] + rozmiar_tekstu[1]) // 2), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 6)
 
-            aktualna_klatka_przod = klatka
-            aktualna_klatka_bok = klatka_bok
+                aktualna_klatka_przod = klatka
+                aktualna_klatka_bok = klatka_bok
 
-            time.sleep(3)
-            licznik_powtorzen = 0
-            trening_rozpoczety = False
-            witaj_powiedziane = False
-            continue
-        else:
-            pass
+                time.sleep(3)
+                licznik_powtorzen = 0
+                trening_rozpoczety = False
+                witaj_powiedziane = False
+                continue
+            else:
+                pass
 
         aktualna_klatka_przod = klatka
         aktualna_klatka_bok = klatka_bok

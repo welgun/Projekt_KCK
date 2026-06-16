@@ -121,13 +121,12 @@ class SluchTrenera:
                 break
 
     def _obsluz_rozpoznany_tekst(self, tekst):
-        print(f"Trener usłyszał: {tekst}")
         slowa_kluczowe_pauza = ["pauza", "przerwa"]
         slowa_kluczowe_reset = ["reset", "od nowa"]
-        slowa_kluczowe_przelacz = ["przełącz kamerę", "przelacz kamere"]
-        slowa_kluczowe_dodaj = ["dodaj powtórzenie", "dodaj powtorzenie"]
-        slowa_kluczowe_odejmij = ["odejmij powtórzenie", "odejmij powtorzenie"]
-        slowa_kluczowe_rozpocznij = ["rozpocznij trening"]
+        slowa_kluczowe_przelacz = ["przełącz kamerę", "przełącz kamere", "zmień kamerę", "zmień kamere"]
+        slowa_kluczowe_dodaj = ["dodaj powtórzenie", "zwiększ powtórzenia"]
+        slowa_kluczowe_odejmij = ["odejmij powtórzenie", "zmniejsz powtórzenia"]
+        slowa_kluczowe_rozpocznij = ["rozpocznij trening", "start"]
 
         if any(slowo in tekst for slowo in slowa_kluczowe_dodaj):
             self.zadanie_dodania_powtorzenia = True
