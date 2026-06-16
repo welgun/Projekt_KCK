@@ -1,6 +1,7 @@
 # Przed pierwszym uruchomieniem:
 - Zainstaluj Pythona w wersji 3.12
 - W terminalu z głównego katalogu wywołaj:
+
 ```python -m venv env```
 
 ```env\Scripts\activate```
@@ -9,11 +10,13 @@
 
 # Uruchomienie aplikacji
 1. Terminal:
+
 ```.\env\Scripts\activate```
 
 ```python .\Serwer\main.py```
 
 2. Terminal:
+
 ```.\env\Scripts\activate```
 
 ```python .\Sledzenie_ruchu\Rozpoznawanie_ruchu.py```
