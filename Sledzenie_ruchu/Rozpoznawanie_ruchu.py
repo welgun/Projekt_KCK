@@ -122,7 +122,12 @@ def watek_kamery():
     mowa.powiedz("Witaj w asystencie martwego ciągu. Przygotuj się do ćwiczenia.")
 
     film_przod = cv2.VideoCapture(0)
+    film_przod.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    film_przod.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
     film_bok = cv2.VideoCapture(1)
+    film_bok.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    film_bok.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
     while True:
         if not film_przod.isOpened() or not film_bok.isOpened():
@@ -133,8 +138,12 @@ def watek_kamery():
             time.sleep(1)
             if not film_przod.isOpened():
                 film_przod = cv2.VideoCapture(0)
+                film_przod.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+                film_przod.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
             if not film_bok.isOpened():
                 film_bok = cv2.VideoCapture(1)
+                film_bok.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+                film_bok.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
             continue
 
         if not sluch.czy_dziala():
