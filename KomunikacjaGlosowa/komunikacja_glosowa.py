@@ -119,15 +119,11 @@ class SluchTrenera:
 
     def _obsluz_rozpoznany_tekst(self, tekst):
         print(f"Trener usłyszał: {tekst}")
-        slowa_kluczowe_koniec = ["koniec", "wyłącz", "wylacz", "stop"]
         slowa_kluczowe_pauza = ["pauza", "przerwa"]
         slowa_kluczowe_reset = ["reset", "od nowa"]
         slowa_kluczowe_przelacz = ["przełącz kamerę", "przelacz kamere"]
 
-        if any(slowo in tekst for slowo in slowa_kluczowe_koniec):
-            print("Wykryto komendę zamknięcia. Zamykam zasoby audio...")
-            self.zamknij()
-        elif any(slowo in tekst for slowo in slowa_kluczowe_pauza):
+        if any(slowo in tekst for slowo in slowa_kluczowe_pauza):
             self.pauza = not self.pauza
             print(f"Zmieniono stan pauzy: {self.pauza}")
         elif any(slowo in tekst for slowo in slowa_kluczowe_reset):
