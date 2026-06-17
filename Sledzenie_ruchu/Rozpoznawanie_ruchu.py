@@ -39,6 +39,7 @@ def generuj_obraz_brak_kamery():
 CZAS_STABILIZACJI = 1.0
 CZAS_COOLDOWN = 4.0
 TOLERANCJA_ZLEJ_POSTAWY_SEKUNDY = 1.0
+MIN_CZAS_POWTORZENIA = 2.0
 
 usun_polskie_znaki = str.maketrans("ąćęłńóśźżĄĆĘŁŃÓŚŹŻ", "acelnoszzACELNOSZZ")
 
@@ -149,6 +150,7 @@ def watek_kamery():
     czas_ostatniego_mowienia = 0.0
 
     czas_rozpoczecia_bledu = 0.0
+    czas_ostatniego_powtorzenia = 0.0
 
     global trening_rozpoczety
 
@@ -297,8 +299,12 @@ def watek_kamery():
                     if y_dloni < y_bioder:
                         faza_ruchu = "GORA"
                         if brak_bledu_cwiczenia:
-                            licznik_powtorzen += 1
-                            mowa.powiedz("Powtórzenie zaliczono")
+                            if aktualny_czas - czas_ostatniego_powtorzenia >= MIN_CZAS_POWTORZENIA:
+                                licznik_powtorzen += 1
+                                mowa.powiedz("Powtórzenie zaliczono")
+                                czas_ostatniego_powtorzenia = aktualny_czas
+                            else:
+                                mowa.powiedz("Powtórzenie zbyt szybkie")
                         else:
                             mowa.powiedz("Powtórzenia nie zaliczono")
 
