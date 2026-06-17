@@ -224,3 +224,35 @@ Zwraca listę wszystkich treningów przypisanych do danego użytkownika (od najn
 * 🔴 **HTTP 400 Bad Request** {
   "error": "Brak parametru user_id w adresie URL"
 }
+
+### Usuwanie Statystyk (Treningu)
+
+Usuwa konkretny trening z bazy danych na podstawie jego unikalnego ID. Zmienną `training_id` należy przekazać jako parametr URL.
+
+* **Endpoint:** `/api/stats/delete?training_id={id}` (np. /api/stats/delete?training_id=5)
+* **Metoda HTTP:** `DELETE`
+
+**Zapytanie:**
+(Brak ciała zapytania - nie wysyłamy JSON-a, id podajemy w URL jako parametr)
+
+**Odpowiedzi:**
+
+* 🟢 **HTTP 200 OK** (Usunięto pomyślnie)
+{
+  "message": "Trening o ID 5 został pomyślnie usunięty."
+}
+
+* 🔴 **HTTP 404 Not Found** (Trening nie istnieje w bazie)
+{
+  "error": "Nie znaleziono treningu o podanym ID"
+}
+
+* 🔴 **HTTP 400 Bad Request** (Brak ID w adresie)
+{
+  "error": "Brak parametru training_id w adresie URL"
+}
+
+* 🔴 **HTTP 500 Internal Server Error** (Problem po stronie bazy danych)
+{
+  "error": "Błąd bazy danych"
+}

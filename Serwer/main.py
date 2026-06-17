@@ -224,6 +224,34 @@ def get_stats():
     finally:
         conn.close()
 
+@app.route('/api/stats/delete', methods=['DELETE'])
+def delete_stats():
+    training_id = request.args.get('training_id')
+    
+    if not training_id:
+        return jsonify({"error": "Brak parametru training_id w adresie URL"}), 400
+
+    conn = get_db()
+    
+    try:
+        training = conn.execute('SELECT * FROM trainings WHERE id = ?', (training_id,)).fetchone()
+        
+        if not training:
+            return jsonify({"error": "Nie znaleziono treningu o podanym ID"}), 404
+
+        conn.execute('DELETE FROM trainings WHERE id = ?', (training_id,))
+        conn.commit()
+        
+        return jsonify({
+            "message": f"Trening o ID {training_id} został pomyślnie usunięty."
+        }), 200
+        
+    except sqlite3.Error as e:
+        conn.rollback()
+        return jsonify({"error": f"Błąd bazy danych: {str(e)}"}), 500
+        
+    finally:
+        conn.close()
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
