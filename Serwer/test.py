@@ -38,14 +38,37 @@ res_login_new = requests.post(f"{BASE_URL}/login", json={
 })
 print(f"Status: {res_login_new.status_code} | Odpowiedź: {res_login_new.json()}\n")
 
-print("5. TEST USUWANIA KONTA")
+user_id = res_login_new.json().get("user_id", 0)
+
+print("5. TEST ZAPISU TRENINGU")
+res_save_stats = requests.post(f"{BASE_URL}/stats/save", json={
+    "user_id": user_id,
+    "date": "2026-06-17",
+    "reps_done": 12,
+    "reps_goal": 15,
+    "is_goal_achieved": False,
+    "duration_seconds": 120
+})
+print(f"Status: {res_save_stats.status_code} | Odpowiedź: {res_save_stats.json()}\n")
+
+training_id = res_save_stats.json().get("training_id", 0)
+
+print("6. TEST POBIERANIA STATYSTYK")
+res_get_stats = requests.get(f"{BASE_URL}/stats/get?user_id={user_id}")
+print(f"Status: {res_get_stats.status_code} | Odpowiedź: {res_get_stats.json()}\n")
+
+print("7. TEST USUWANIA TRENINGU")
+res_delete_stats = requests.delete(f"{BASE_URL}/stats/delete?training_id={training_id}")
+print(f"Status: {res_delete_stats.status_code} | Odpowiedź: {res_delete_stats.json()}\n")
+
+print("8. TEST USUWANIA KONTA")
 res_delete = requests.delete(f"{BASE_URL}/delete_account", json={
     "username": USERNAME,
     "password": NEW_PASSWORD
 })
 print(f"Status: {res_delete.status_code} | Odpowiedź: {res_delete.json()}\n")
 
-print("6. TEST LOGOWANIA PO USUNIĘCIU KONTA (OCZEKIWANY BŁĄD)")
+print("9. TEST LOGOWANIA PO USUNIĘCIU KONTA (OCZEKIWANY BŁĄD)")
 res_login_deleted = requests.post(f"{BASE_URL}/login", json={
     "username": USERNAME,
     "password": NEW_PASSWORD

@@ -1,15 +1,16 @@
 package com.example.cybertrener.services;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.function.Consumer;
 
-public class ApiService {
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
+public class ApiService {
+    public static int currentUserId = -1;
     private static final String BASE_URL = "http://localhost:5000";
     private static final String TRACKING_URL = "http://localhost:5001";
     private static final HttpClient client = HttpClient.newHttpClient();
@@ -41,6 +42,9 @@ public class ApiService {
         client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenAccept(response -> {
                     if (response.statusCode() == 200) {
+                        JsonObject json = gson.fromJson(response.body(), JsonObject.class);
+                        int userId = json.get("user_id").getAsInt();
+                        ApiService.currentUserId = userId;
                         onSuccess.run();
                     } else {
                         onError.accept(getErrorMessage(response.body(), response.statusCode()));
@@ -104,10 +108,13 @@ public class ApiService {
     }
 
     public static void startTraining(Runnable onSuccess, Consumer<String> onError) {
+        JsonObject jsonBody = new JsonObject();
+        jsonBody.addProperty("user_id", currentUserId);
+
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(TRACKING_URL + "/api/start_training"))
                 .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.noBody())
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody.toString()))
                 .build();
 
         client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
