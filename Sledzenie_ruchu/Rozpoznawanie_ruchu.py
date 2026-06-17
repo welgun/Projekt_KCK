@@ -7,7 +7,8 @@ import threading
 import numpy as np
 from flask import Flask, Response, request
 import signal
-
+import requests
+from datetime import datetime
 aktualny_folder = os.path.dirname(os.path.abspath(__file__))
 folder_glowny = os.path.dirname(aktualny_folder)
 folder_komunikacji = os.path.join(folder_glowny, 'KomunikacjaGlosowa')
@@ -21,7 +22,11 @@ aktualna_klatka_przod = None
 aktualna_klatka_bok = None
 zamien_kamery = False
 trening_rozpoczety = False
-
+aktualny_user_id = -1
+czas_startu_treningu = 0.0
+byl_trening_w_toku = False
+status_celu = 0
+czas_calkowity = 0
 def generuj_obraz_brak_kamery():
     puste_tlo = np.zeros((720, 1280, 3), dtype=np.uint8)
     rozmiar_tekstu = cv2.getTextSize("BRAK KAMERY / NIEPODLACZONA", cv2.FONT_HERSHEY_SIMPLEX, 2, 5)[0]
@@ -92,8 +97,31 @@ def analizuj_martwy_ciag(punkty, punkty_bok, mp_pozycja):
     wysokosc_kolan = (L_kolano.y + P_kolano.y) / 2
     return komunikat, wysokosc_dloni, wysokosc_bioder, wysokosc_kolan, poprawna_postawa
 
+def wyslij_statystyki_treningu(user_id, czas, status, wykonane_powt, cel_powt):
+    def watek_wysylania():
+        if user_id == -1:
+            print("Nie wysłano danych - użytkownik niezalogowany (-1).")
+            return
+        aktualna_data = datetime.now().isoformat()
+        url = "http://localhost:5000/api/status/save"
+        payload = {
+            "user_id": user_id,
+            "date": aktualna_data,
+            "reps_done": wykonane_powt,
+            "reps_goal": cel_powt,
+            "is_goal_achived": status,
+            "duration_seconds": czas
+        }
+        try:
+            response = requests.post(url, json=payload, timeout=3)
+            print(f"Dane wysłane pomyślnie. Status serwera: {response.status_code}")
+        except Exception as e:
+            print(f"Nie udało się wysłać danych na serwer: {e}")
+    threading.Thread(target=watek_wysylania, daemon=True).start()
+
 def watek_kamery():
-    global aktualna_klatka_przod, aktualna_klatka_bok, zamien_kamery
+    global aktualna_klatka_przod, aktualna_klatka_bok, zamien_kamery, czas_startu_treningu, byl_trening_w_toku, trening_rozpoczety
+    global status_celu, czas_calkowity
 
     from mediapipe.python.solutions import pose as mp_pose
     from mediapipe.python.solutions import drawing_utils as mp_drawing
@@ -210,6 +238,9 @@ def watek_kamery():
         wynik_bok = pozycja_bok.process(klatka_bok_rgb)
 
         if trening_rozpoczety:
+            if not byl_trening_w_toku:
+                czas_startu_treningu = time.time()
+                byl_trening_w_toku = True
             if not witaj_powiedziane:
                 mowa.powiedz("Witaj w asystencie martwego ciągu. Przygotuj się do ćwiczenia.")
                 witaj_powiedziane = True
@@ -270,8 +301,15 @@ def watek_kamery():
             cv2.putText(klatka, f"Faza: {faza_ruchu}", (20, 550), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
             cv2.putText(klatka, f"Powtorzenia: {licznik_powtorzen}", (20, 600), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             cv2.putText(klatka, f"Pozostalo: {cel_powtorzen - licznik_powtorzen}", (20, 650), cv2.FONT_HERSHEY_SIMPLEX, 1,(0, 0, 255), 2)
+            aktualny_czas_trwania = int(time.time() - czas_startu_treningu)
+            cv2.putText(klatka, f"Czas: {aktualny_czas_trwania}", (20, 700), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
             if licznik_powtorzen >= cel_powtorzen:
+                status_celu = 1
+                czas_calkowity = int(time.time() - czas_startu_treningu)
+                wyslij_statystyki_treningu(aktualny_user_id, czas_calkowity, status_celu, licznik_powtorzen, cel_powtorzen)
+
+                byl_trening_w_toku = False
                 rozmiar_tekstu = cv2.getTextSize("UDALO SIE!", cv2.FONT_HERSHEY_SIMPLEX, 3, 6)[0]
                 cv2.putText(klatka, "UDALO SIE!",((klatka.shape[1] - rozmiar_tekstu[0]) // 2, (klatka.shape[0] + rozmiar_tekstu[1]) // 2), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 6)
 
@@ -285,7 +323,13 @@ def watek_kamery():
                 continue
             else:
                 pass
+        else:
+            if byl_trening_w_toku:
+                status_celu = 0
+                czas_calkowity = int(time.time() - czas_startu_treningu)
+                wyslij_statystyki_treningu(aktualny_user_id, czas_calkowity, status_celu, licznik_powtorzen, cel_powtorzen)
 
+                byl_trening_w_toku = False        
         aktualna_klatka_przod = klatka
         aktualna_klatka_bok = klatka_bok
 
@@ -299,6 +343,11 @@ threading.Thread(target=watek_kamery, daemon=True).start()
 @app.route('/api/start_training', methods=['POST'])
 def start_training():
     global trening_rozpoczety
+    global aktualny_user_id
+    dane = request.get_json(silent=True)
+    if dane and "user_id" in dane:
+        aktualny_user_id = dane["user_id"]
+        print(f"Rozpoczęto trening. ID użytkownika: {aktualny_user_id}")
     trening_rozpoczety = True
     return {"status": "success", "message": "Trening rozpoczęty."}
 

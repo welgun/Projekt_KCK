@@ -9,7 +9,7 @@ import java.net.http.HttpResponse;
 import java.util.function.Consumer;
 
 public class ApiService {
-
+    public static int currentUserId = -1;
     private static final String BASE_URL = "http://localhost:5000";
     private static final String TRACKING_URL = "http://localhost:5001";
     private static final HttpClient client = HttpClient.newHttpClient();
@@ -41,6 +41,9 @@ public class ApiService {
         client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenAccept(response -> {
                     if (response.statusCode() == 200) {
+                        JsonObject json = gson.fromJson(response.body(), JsonObject.class);
+                        int userId = json.get("user_id").getAsInt();
+                        ApiService.currentUserId = userId;
                         onSuccess.run();
                     } else {
                         onError.accept(getErrorMessage(response.body(), response.statusCode()));
