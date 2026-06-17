@@ -9,6 +9,11 @@ import java.util.function.Consumer;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import java.lang.reflect.Type;
+import com.google.gson.reflect.TypeToken;
+import java.util.List;
+import com.example.cybertrener.models.TrainingSession;
+
 public class ApiService {
     public static int currentUserId = -1;
     private static final String BASE_URL = "http://localhost:5000";
@@ -153,6 +158,28 @@ public class ApiService {
                 })
                 .exceptionally(e -> {
                     onStatusReceived.accept(false);
+                    return null;
+                });
+    }
+
+    public static void getTrainingHistory(int userId, Consumer<List<TrainingSession>> onSuccess, Consumer<String> onError) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/api/stats/get?user_id=" + userId))
+                .GET()
+                .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() == 200) {
+                        Type listType = new TypeToken<List<TrainingSession>>(){}.getType();
+                        List<TrainingSession> history = gson.fromJson(response.body(), listType);
+                        onSuccess.accept(history);
+                    } else {
+                        onError.accept("Błąd pobierania historii. Kod: " + response.statusCode());
+                    }
+                })
+                .exceptionally(e -> {
+                    onError.accept("Brak połączenia z serwerem bazy danych.");
                     return null;
                 });
     }
