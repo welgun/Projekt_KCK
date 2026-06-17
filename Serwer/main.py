@@ -20,6 +20,19 @@ def init_db():
         )
     ''')
     
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS trainings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            date DATETIME NOT NULL,
+            reps_done INTEGER NOT NULL,
+            reps_goal INTEGER NOT NULL,
+            is_goal_achieved BOOLEAN NOT NULL,
+            duration_seconds INTEGER NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+
     admin_exists = conn.execute('SELECT * FROM users WHERE username = ?', ('admin',)).fetchone()
     if not admin_exists:
         hashed_pw = generate_password_hash('test1234')
@@ -97,7 +110,6 @@ def register():
 def change_password():
     data = request.get_json()
     
-    # Sprawdzamy, czy przesłano wszystkie wymagane pola
     if not data or not data.get('username') or not data.get('old_password') or not data.get('new_password'):
         return jsonify({"error": "Brak nazwy użytkownika, starego lub nowego hasła"}), 400
 
@@ -108,7 +120,6 @@ def change_password():
     conn = get_db()
     user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
 
-    # Weryfikacja: czy użytkownik istnieje i czy stare hasło się zgadza
     if user and check_password_hash(user['password_hash'], old_password):
         new_hashed_password = generate_password_hash(new_password)
         
@@ -139,7 +150,6 @@ def delete_account():
     conn = get_db()
     user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
 
-    # Weryfikacja: potwierdzamy tożsamość przed usunięciem konta
     if user and check_password_hash(user['password_hash'], password):
         try:
             conn.execute('DELETE FROM users WHERE id = ?', (user['id'],))
@@ -153,6 +163,42 @@ def delete_account():
     else:
         conn.close()
         return jsonify({"error": "Nieprawidłowy login lub hasło"}), 401
+
+
+@app.route('/api/stats/save', methods=['POST'])
+def save_stats():
+    data = request.get_json()
+    
+    required_fields = ['user_id', 'date', 'reps_done', 'reps_goal', 'is_goal_achieved', 'duration_seconds']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({"error": f"Brak wymaganego pola: {field}"}), 400
+
+    user_id = data['user_id']
+    date = data['date']
+    reps_done = data['reps_done']
+    reps_goal = data['reps_goal']
+    is_goal_achieved = 1 if data['is_goal_achieved'] else 0
+    duration_seconds = data['duration_seconds']
+
+    conn = get_db()
+    try:
+        cursor = conn.execute('''
+            INSERT INTO trainings (user_id, date, reps_done, reps_goal, is_goal_achieved, duration_seconds)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (user_id, date, reps_done, reps_goal, is_goal_achieved, duration_seconds))
+        
+        conn.commit()
+        return jsonify({
+            "message": "Trening zapisany pomyślnie!",
+            "training_id": cursor.lastrowid
+        }), 201
+        
+    except sqlite3.Error as e:
+        conn.rollback()
+        return jsonify({"error": f"Błąd bazy danych: {str(e)}"}), 500
+    finally:
+        conn.close()
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
