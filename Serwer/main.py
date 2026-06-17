@@ -200,5 +200,30 @@ def save_stats():
     finally:
         conn.close()
 
+
+@app.route('/api/stats/get', methods=['GET'])
+def get_stats():
+    user_id = request.args.get('user_id')
+    
+    if not user_id:
+        return jsonify({"error": "Brak parametru user_id w adresie URL"}), 400
+
+    conn = get_db()
+    try:
+        trainings = conn.execute('''
+            SELECT * FROM trainings 
+            WHERE user_id = ? 
+            ORDER BY date DESC
+        ''', (user_id,)).fetchall()
+        
+        trainings_list = [dict(row) for row in trainings]
+        return jsonify(trainings_list), 200
+        
+    except sqlite3.Error as e:
+        return jsonify({"error": f"Błąd bazy danych: {str(e)}"}), 500
+    finally:
+        conn.close()
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
