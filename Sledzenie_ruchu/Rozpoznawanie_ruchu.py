@@ -40,6 +40,8 @@ CZAS_STABILIZACJI = 1.0
 CZAS_COOLDOWN = 4.0
 TOLERANCJA_ZLEJ_POSTAWY_SEKUNDY = 1.0
 
+usun_polskie_znaki = str.maketrans("ąćęłńóśźżĄĆĘŁŃÓŚŹŻ", "acelnoszzACELNOSZZ")
+
 def analizuj_martwy_ciag(punkty, punkty_bok, mp_pozycja):
     L_ramie = punkty[mp_pozycja.PoseLandmark.LEFT_SHOULDER]
     P_ramie = punkty[mp_pozycja.PoseLandmark.RIGHT_SHOULDER]
@@ -300,7 +302,7 @@ def watek_kamery():
                         else:
                             mowa.powiedz("Powtórzenia nie zaliczono")
 
-            cv2.putText(klatka, f"Wskazowka: {komunikat}", (20, 500), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+            cv2.putText(klatka, f"Wskazowka: {komunikat.translate(usun_polskie_znaki)}", (20, 500), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
             cv2.putText(klatka, f"Faza: {faza_ruchu}", (20, 550), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
             cv2.putText(klatka, f"Powtorzenia: {licznik_powtorzen}", (20, 600), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             cv2.putText(klatka, f"Pozostalo: {cel_powtorzen - licznik_powtorzen}", (20, 650), cv2.FONT_HERSHEY_SIMPLEX, 1,(0, 0, 255), 2)
