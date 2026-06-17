@@ -38,8 +38,8 @@ def generuj_obraz_brak_kamery():
 
 CZAS_STABILIZACJI = 1.0
 CZAS_COOLDOWN = 4.0
-TOLERANCJA_ZLEJ_POSTAWY_SEKUNDY = 1.0
-MIN_CZAS_POWTORZENIA = 2.0
+TOLERANCJA_ZLEJ_POSTAWY_SEKUNDY = 0.8
+MIN_CZAS_POWTORZENIA = 1.0
 
 usun_polskie_znaki = str.maketrans("ąćęłńóśźżĄĆĘŁŃÓŚŹŻ", "acelnoszzACELNOSZZ")
 
@@ -150,7 +150,7 @@ def watek_kamery():
     czas_ostatniego_mowienia = 0.0
 
     czas_rozpoczecia_bledu = 0.0
-    czas_ostatniego_powtorzenia = 0.0
+    czas_zejscia_w_dol = 0.0
 
     global trening_rozpoczety
 
@@ -239,7 +239,6 @@ def watek_kamery():
             if trening_rozpoczety:
                 trening_rozpoczety = False
                 witaj_powiedziane = False
-                licznik_powtorzen = 0
                 mowa.powiedz("Trening przerwany")
                 print("Trening przerwany komendą głosową.")
             else:
@@ -297,6 +296,7 @@ def watek_kamery():
                         faza_ruchu = "DOL"
                         brak_bledu_cwiczenia = True
                         czas_rozpoczecia_bledu = 0.0
+                        czas_zejscia_w_dol = aktualny_czas
                 elif faza_ruchu == "DOL":
                     if not postawa_poprawna:
                         if czas_rozpoczecia_bledu == 0.0:
@@ -309,14 +309,14 @@ def watek_kamery():
                     if y_dloni < y_bioder:
                         faza_ruchu = "GORA"
                         if brak_bledu_cwiczenia:
-                            if aktualny_czas - czas_ostatniego_powtorzenia >= MIN_CZAS_POWTORZENIA:
+                            if czas_zejscia_w_dol > 0 and aktualny_czas - czas_zejscia_w_dol >= MIN_CZAS_POWTORZENIA:
                                 licznik_powtorzen += 1
                                 mowa.powiedz("Powtórzenie zaliczono")
-                                czas_ostatniego_powtorzenia = aktualny_czas
                             else:
                                 mowa.powiedz("Powtórzenie zbyt szybkie")
                         else:
                             mowa.powiedz("Powtórzenia nie zaliczono")
+                        czas_zejscia_w_dol = 0.0
 
             cv2.putText(klatka, f"Wskazowka: {komunikat.translate(usun_polskie_znaki)}", (20, 500), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
             cv2.putText(klatka, f"Faza: {faza_ruchu}", (20, 550), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
@@ -350,7 +350,8 @@ def watek_kamery():
                 czas_calkowity = int(time.time() - czas_startu_treningu)
                 wyslij_statystyki_treningu(aktualny_user_id, czas_calkowity, status_celu, licznik_powtorzen, cel_powtorzen)
 
-                byl_trening_w_toku = False        
+                byl_trening_w_toku = False
+                licznik_powtorzen = 0
         aktualna_klatka_przod = klatka
         aktualna_klatka_bok = klatka_bok
 
