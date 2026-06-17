@@ -235,6 +235,16 @@ def watek_kamery():
             else:
                 mowa.powiedz("Trening już trwa")
 
+        if sluch.sprawdz_i_wyczysc_zatrzymanie_treningu():
+            if trening_rozpoczety:
+                trening_rozpoczety = False
+                witaj_powiedziane = False
+                licznik_powtorzen = 0
+                mowa.powiedz("Trening przerwany")
+                print("Trening przerwany komendą głosową.")
+            else:
+                mowa.powiedz("Trening nie jest w toku")
+
         klatka = cv2.flip(nowa_klatka_przod, 1)
         klatka_bok = nowa_klatka_bok
 

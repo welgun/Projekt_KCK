@@ -78,6 +78,7 @@ class SluchTrenera:
         self.zadanie_dodania_powtorzenia = False
         self.zadanie_odjecia_powtorzenia = False
         self.zadanie_rozpoczecia_treningu = False
+        self.zadanie_zatrzymania_treningu = False
 
         katalog_obecny = os.path.dirname(os.path.abspath(__file__))
         sciezka_vosk = os.path.join(katalog_obecny, "vosk-model-pl")
@@ -127,6 +128,7 @@ class SluchTrenera:
         slowa_kluczowe_dodaj = ["dodaj powtórzenie", "zwiększ powtórzenia"]
         slowa_kluczowe_odejmij = ["odejmij powtórzenie", "zmniejsz powtórzenia"]
         slowa_kluczowe_rozpocznij = ["rozpocznij trening", "start"]
+        slowa_kluczowe_zatrzymaj = ["zatrzymaj trening", "przerwij trening", "stop"]
 
         if any(slowo in tekst for slowo in slowa_kluczowe_dodaj):
             self.zadanie_dodania_powtorzenia = True
@@ -146,6 +148,9 @@ class SluchTrenera:
         elif any(slowo in tekst for slowo in slowa_kluczowe_rozpocznij):
             self.zadanie_rozpoczecia_treningu = True
             print("Wykryto komendę rozpoczęcia treningu.")
+        elif any(slowo in tekst for slowo in slowa_kluczowe_zatrzymaj):
+            self.zadanie_zatrzymania_treningu = True
+            print("Wykryto komendę zatrzymania treningu.")
 
     def sprawdz_i_wyczysc_reset(self):
         if self.zadanie_resetu:
@@ -174,6 +179,12 @@ class SluchTrenera:
     def sprawdz_i_wyczysc_rozpoczecie_treningu(self):
         if self.zadanie_rozpoczecia_treningu:
             self.zadanie_rozpoczecia_treningu = False
+            return True
+        return False
+
+    def sprawdz_i_wyczysc_zatrzymanie_treningu(self):
+        if self.zadanie_zatrzymania_treningu:
+            self.zadanie_zatrzymania_treningu = False
             return True
         return False
 
