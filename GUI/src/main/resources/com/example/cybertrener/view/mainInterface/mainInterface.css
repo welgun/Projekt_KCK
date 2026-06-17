@@ -25,7 +25,7 @@
 }
 
 .menu-header {
-
+    -fx-font-family: "Bitcount Prop Single";
     -fx-text-fill: #444444;
     -fx-font-size: 30px;
     -fx-padding: 30 20 30 20;
@@ -132,6 +132,7 @@
     -fx-background-color: #bce665;
 }
 
+
 .cyber-combo {
     -fx-background-color: rgba(23, 23, 30, 0.7);
     -fx-border-color: #34FAEA;
@@ -154,5 +155,145 @@
 
 .cyber-combo .list-cell:hover {
     -fx-background-color: #34FAEA;
+    -fx-text-fill: #000000;
+}
+
+.cyber-combo .combo-box-popup .list-cell {
+    -fx-text-fill: #000000;
+}
+
+.cyber-combo .combo-box-popup .list-cell:filled:selected,
+.cyber-combo .combo-box-popup .list-cell:filled:hover {
+    -fx-text-fill: #FFFFFF;
+}
+
+#historyBox, #statsBox {
+    -fx-background-color: #17171E;
+    -fx-background-radius: 15px;
+    -fx-border-color: #34FAEA;
+    -fx-border-radius: 15px;
+    -fx-border-width: 2px;
+    -fx-padding: 30px;
+}
+
+.table-view {
+    -fx-background-color: transparent;
+    -fx-border-color: #34FAEA;
+    -fx-border-width: 1px;
+}
+
+.table-view .column-header-background,
+.table-view .filler {
+    -fx-background-color: #1C1C24;
+}
+
+.table-view .column-header {
+    -fx-background-color: #1C1C24;
+    -fx-border-color: transparent #34FAEA transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+}
+
+.table-view .column-header:last-visible {
+    -fx-border-color: transparent;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #34FAEA;
+    -fx-font-family: "Barlow Light", sans-serif;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-alignment: CENTER;
+}
+
+.table-row-cell {
+    -fx-background-color: #17171E;
+    -fx-border-color: transparent transparent #2A2A38 transparent;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #1C1C24;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #34FAEA;
+}
+
+.table-row-cell:hover .table-cell {
     -fx-text-fill: #17171E;
+}
+
+.table-cell {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-family: "Barlow Light", sans-serif;
+    -fx-alignment: CENTER;
+    -fx-font-size: 14px;
+}
+
+.table-row-cell:empty {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.table-view:focused {
+    -fx-background-color: transparent;
+}
+
+.table-row-cell:filled:selected {
+    -fx-background-color: #34FAEA;
+}
+
+.table-row-cell:filled:selected .table-cell {
+    -fx-text-fill: #17171E;
+    -fx-font-weight: bold;
+}
+
+#historia, #statystyki {
+    -fx-text-fill: #34FAEA;
+    -fx-font-family: "Bitcount Prop Single";
+    -fx-font-size: 26px;
+    -fx-effect: dropshadow(three-pass-box, rgba(52, 250, 234, 0.4), 10, 0, 0, 0);
+}
+
+.chart {
+    -fx-padding: 10px;
+}
+
+.chart-plot-background {
+    -fx-background-color: #1C1C24;
+}
+
+.axis-label {
+    -fx-text-fill: #34FAEA;
+    -fx-font-family: "Barlow Light", sans-serif;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.chart-vertical-grid-lines,
+.chart-horizontal-grid-lines {
+    -fx-stroke: #333344;
+    -fx-stroke-dash-array: 5 5;
+}
+
+.axis-tick-mark, .axis-minor-tick-mark {
+    -fx-stroke: transparent;
+}
+
+.chart-series-line {
+    -fx-stroke: #34FAEA;
+    -fx-stroke-width: 3px;
+    -fx-effect: dropshadow(three-pass-box, rgba(52, 250, 234, 0.6), 10, 0, 0, 0);
+}
+
+.chart-line-symbol {
+    -fx-background-color: #17171E, #34FAEA;
+    -fx-background-insets: 0, 2;
+    -fx-background-radius: 6px;
+    -fx-padding: 5px;
+    -fx-effect: dropshadow(three-pass-box, rgba(52, 250, 234, 0.8), 5, 0, 0, 0);
+}
+
+.chart-line-symbol:hover {
+    -fx-background-color: #34FAEA, #FFFFFF;
+    -fx-padding: 7px;
 }

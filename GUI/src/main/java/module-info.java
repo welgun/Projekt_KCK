@@ -10,7 +10,7 @@ module com.example.cybertrener {
     //requires eu.hansolo.tilesfx;
     requires com.google.gson;
     requires java.net.http;
-
+    opens com.example.cybertrener.models to com.google.gson, javafx.base;
     opens com.example.cybertrener to javafx.fxml;
     exports com.example.cybertrener;
     exports com.example.cybertrener.controllers;

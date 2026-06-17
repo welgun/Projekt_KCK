@@ -6,6 +6,8 @@ import javafx.animation.ParallelTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -14,6 +16,11 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.image.ImageView;
 import javafx.animation.Timeline;
 import javafx.scene.image.Image;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.beans.property.SimpleStringProperty;
+import com.example.cybertrener.models.TrainingSession;
 
 public class MainInterfaceController {
 
@@ -45,6 +52,17 @@ public class MainInterfaceController {
     @FXML private ImageView cameraView;
     @FXML private ComboBox<String> cameraSelector;
     @FXML private Button startCamButton;
+
+    @FXML private VBox historyBox;
+    @FXML private TableView<TrainingSession> historyTable;
+    @FXML private TableColumn<TrainingSession, String> colDate;
+    @FXML private TableColumn<TrainingSession, Integer> colReps;
+    @FXML private TableColumn<TrainingSession, Integer> colGoal;
+    @FXML private TableColumn<TrainingSession, Integer> colDuration;
+    @FXML private TableColumn<TrainingSession, String> colStatus;
+
+    @FXML private VBox statsBox;
+    @FXML private LineChart<String, Number> progressChart;
 
     private Timeline videoLoop;
     private String currentView = "przod";
@@ -119,6 +137,20 @@ public class MainInterfaceController {
             }
         });
 
+        historyBox.setVisible(false);
+
+        colDate.setCellValueFactory(new PropertyValueFactory<>("date"));
+        colReps.setCellValueFactory(new PropertyValueFactory<>("reps_done"));
+        colGoal.setCellValueFactory(new PropertyValueFactory<>("reps_goal"));
+        colDuration.setCellValueFactory(new PropertyValueFactory<>("duration_seconds"));
+
+        colStatus.setCellValueFactory(cellData -> {
+            int status = cellData.getValue().getIs_goal_achieved();
+            return new SimpleStringProperty(status == 1 ? "Trening Udany" : "Przerwany");
+        });
+
+        statsBox.setVisible(false);
+
         startCameraStream();
         startStatusPolling();
     }
@@ -157,6 +189,7 @@ public class MainInterfaceController {
         registerErrorLabel.setText("");
         changePwErrorLabel.setText("");
 
+        statsBox.setVisible(false);
         loginBox.setVisible(false);
         changePasswordBox.setVisible(false);
         registerBox.setVisible(true);
@@ -167,6 +200,7 @@ public class MainInterfaceController {
         registerErrorLabel.setText("");
         changePwErrorLabel.setText("");
 
+        statsBox.setVisible(false);
         registerBox.setVisible(false);
         changePasswordBox.setVisible(false);
         loginBox.setVisible(true);
@@ -177,9 +211,25 @@ public class MainInterfaceController {
         registerErrorLabel.setText("");
         changePwErrorLabel.setText("");
 
+        statsBox.setVisible(false);
         loginBox.setVisible(false);
         registerBox.setVisible(false);
         changePasswordBox.setVisible(true);
+    }
+
+    @FXML
+    private void showHistoryForm() {
+        if (isMenuOpen) toggleMenu();
+
+        loginBox.setVisible(false);
+        registerBox.setVisible(false);
+        changePasswordBox.setVisible(false);
+
+        statsBox.setVisible(false);
+        setupOverlay.setVisible(true);
+        historyBox.setVisible(true);
+
+        loadHistoryData();
     }
 
     @FXML private void handleSettingsClick() {
@@ -188,6 +238,8 @@ public class MainInterfaceController {
         setupOverlay.setVisible(true);
         loginBox.setVisible(false);
         registerBox.setVisible(false);
+        historyBox.setVisible(false);
+        statsBox.setVisible(false);
         changePasswordBox.setVisible(true);
     }
 
@@ -309,6 +361,8 @@ public class MainInterfaceController {
         loginBox.setVisible(true);
         registerBox.setVisible(false);
         changePasswordBox.setVisible(false);
+        historyBox.setVisible(false);
+        statsBox.setVisible(false);
 
         System.out.println("Użytkownik został pomyślnie wylogowany.");
     }
@@ -330,6 +384,74 @@ public class MainInterfaceController {
         }
         ParallelTransition pt = new ParallelTransition(menuTran, buttonTran);
         pt.play();
+    }
+
+    @FXML
+    private void hideHistoryForm() {
+        setupOverlay.setVisible(false);
+        historyBox.setVisible(false);
+    }
+
+    private void loadHistoryData() {
+        if (ApiService.currentUserId == -1) return;
+
+        ApiService.getTrainingHistory(ApiService.currentUserId,
+                history -> Platform.runLater(() -> {
+                    historyTable.getItems().setAll(history);
+                }),
+                error -> Platform.runLater(() -> {
+                    System.out.println("Błąd ładowania tabeli: " + error);
+                })
+        );
+    }
+
+    @FXML
+    private void showStatsForm() {
+        if (isMenuOpen) toggleMenu();
+
+        loginBox.setVisible(false);
+        registerBox.setVisible(false);
+        changePasswordBox.setVisible(false);
+        historyBox.setVisible(false);
+
+        setupOverlay.setVisible(true);
+        statsBox.setVisible(true);
+
+        loadStatsData();
+    }
+
+    @FXML
+    private void hideStatsForm() {
+        setupOverlay.setVisible(false);
+        statsBox.setVisible(false);
+    }
+
+    private void loadStatsData() {
+        if (ApiService.currentUserId == -1) return;
+
+        ApiService.getTrainingHistory(ApiService.currentUserId,
+                history -> Platform.runLater(() -> {
+                    XYChart.Series<String, Number> series = new XYChart.Series<>();
+                    series.setName("Skuteczność (%)");
+
+                    int trainingNumber = 1;
+                    for (int i = history.size() - 1; i >= 0; i--) {
+                        TrainingSession session = history.get(i);
+
+                        double ratio = 0;
+                        if (session.getReps_goal() > 0) {
+                            ratio = ((double) session.getReps_done() / session.getReps_goal()) * 100.0;
+                        }
+
+                        series.getData().add(new XYChart.Data<>("T" + trainingNumber, ratio));
+                        trainingNumber++;
+                    }
+
+                    progressChart.getData().clear();
+                    progressChart.getData().add(series);
+                }),
+                error -> Platform.runLater(() -> System.out.println("Błąd ładowania statystyk: " + error))
+        );
     }
 
     @FXML
@@ -374,6 +496,8 @@ public class MainInterfaceController {
                             startCamButton.setDisable(false);
                             startCamButton.setVisible(true);
                             System.out.println("Trening został zakończony - przycisk przywrócony.");
+
+                            loadHistoryData();
                         }
                     }
                 });
