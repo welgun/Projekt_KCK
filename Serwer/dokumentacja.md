@@ -172,3 +172,27 @@ Lista aktualnie zaimplementowanych endpointów.
   "error": "Błąd bazy danych podczas usuwania konta"
 }
 ```
+
+### Zapis Treningu (Statystyk)
+
+Zapisuje statystyki z treningu do bazy danych. Wymaga podania `user_id`.
+
+* **Endpoint:** `/api/stats/save`
+* **Metoda HTTP:** `POST`
+
+**Zapytanie:**
+{
+  "user_id": 1,
+  "date": "2026-06-17",
+  "reps_done": 12,
+  "reps_goal": 15,
+  "is_goal_achieved": false,
+  "duration_seconds": 120
+}
+
+**Odpowiedzi:**
+* 🟢 **HTTP 201 Created** {
+  "message": "Trening zapisany pomyślnie!",
+  "training_id": 1
+}
+* 🔴 **HTTP 400 Bad Request** (Brak któregoś z pól)
