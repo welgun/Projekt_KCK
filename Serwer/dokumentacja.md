@@ -196,3 +196,31 @@ Zapisuje statystyki z treningu do bazy danych. Wymaga podania `user_id`.
   "training_id": 1
 }
 * 🔴 **HTTP 400 Bad Request** (Brak któregoś z pól)
+
+
+### Pobieranie Statystyk Użytkownika
+
+Zwraca listę wszystkich treningów przypisanych do danego użytkownika (od najnowszego). Zmienną `user_id` należy przekazać jako parametr URL (?user_id=X).
+
+* **Endpoint:** `/api/stats/get?user_id={id}` (np. /api/stats/get?user_id=1)
+* **Metoda HTTP:** `GET`
+
+**Zapytanie:**
+(Brak ciała zapytania - nie wysyłamy JSON-a, używamy tylko adresu URL z parametrem)
+
+**Odpowiedzi:**
+* 🟢 **HTTP 200 OK** (Zwraca tablicę obiektów. Może być pusta [])
+[
+  {
+    "id": 5,
+    "user_id": 1,
+    "date": "2026-06-17",
+    "reps_done": 12,
+    "reps_goal": 15,
+    "is_goal_achieved": 0,
+    "duration_seconds": 120
+  }
+]
+* 🔴 **HTTP 400 Bad Request** {
+  "error": "Brak parametru user_id w adresie URL"
+}
