@@ -13,10 +13,13 @@ aktualny_folder = os.path.dirname(os.path.abspath(__file__))
 folder_glowny = os.path.dirname(aktualny_folder)
 folder_komunikacji = os.path.join(folder_glowny, 'KomunikacjaGlosowa')
 sys.path.append(folder_komunikacji)
+import logging
 
 from komunikacja_glosowa import MowaTrenera, SluchTrenera, czy_komunikacja_zostala_zainicjalizowana
 
 app = Flask(__name__)
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 aktualna_klatka_przod = None
 aktualna_klatka_bok = None
@@ -102,14 +105,14 @@ def wyslij_statystyki_treningu(user_id, czas, status, wykonane_powt, cel_powt):
         if user_id == -1:
             print("Nie wysłano danych - użytkownik niezalogowany (-1).")
             return
-        aktualna_data = datetime.now().isoformat()
-        url = "http://localhost:5000/api/status/save"
+        aktualna_data = datetime.now().strftime("%Y-%m-%d")
+        url = "http://localhost:5000/api/stats/save"
         payload = {
             "user_id": user_id,
             "date": aktualna_data,
             "reps_done": wykonane_powt,
             "reps_goal": cel_powt,
-            "is_goal_achived": status,
+            "is_goal_achieved": status,
             "duration_seconds": czas
         }
         try:
