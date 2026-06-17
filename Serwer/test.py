@@ -51,7 +51,6 @@ res_save_stats = requests.post(f"{BASE_URL}/stats/save", json={
 })
 print(f"Status: {res_save_stats.status_code} | Odpowiedź: {res_save_stats.json()}\n")
 
-# Pobieramy ID nowo zapisanego treningu
 training_id = res_save_stats.json().get("training_id", 0)
 
 print("6. TEST POBIERANIA STATYSTYK")
@@ -61,7 +60,6 @@ print(f"Status: {res_get_stats.status_code} | Odpowiedź: {res_get_stats.json()}
 print("7. TEST USUWANIA TRENINGU")
 res_delete_stats = requests.delete(f"{BASE_URL}/stats/delete?training_id={training_id}")
 print(f"Status: {res_delete_stats.status_code} | Odpowiedź: {res_delete_stats.json()}\n")
-# ----------------------------
 
 print("8. TEST USUWANIA KONTA")
 res_delete = requests.delete(f"{BASE_URL}/delete_account", json={
